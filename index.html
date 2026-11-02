@@ -290,6 +290,21 @@
         <div id="outgoing-list"></div>
       </div>
 
+      <div class="st-section" id="sec-changepw">
+        <button type="button" class="signout" id="btn-changepw">Change password</button>
+        <div id="changepw-form" style="display:none;">
+          <input type="text" id="cpw-current" inputmode="text" autocapitalize="off" autocomplete="current-password" maxlength="6" placeholder="Current password" aria-label="Current password">
+          <input type="text" id="cpw-new" inputmode="text" autocapitalize="off" autocomplete="new-password" maxlength="6" placeholder="New password" aria-label="New password">
+          <div class="small" id="cpw-hint"></div>
+          <input type="text" id="cpw-confirm" inputmode="text" autocapitalize="off" autocomplete="new-password" maxlength="6" placeholder="Confirm new password" aria-label="Confirm new password">
+          <div class="err" id="cpw-err"></div>
+          <div class="srow" style="margin-top:10px;">
+            <button type="button" class="sbtn" id="btn-cpw-save">Save</button>
+            <button type="button" class="sbtn" id="btn-cpw-cancel">Cancel</button>
+          </div>
+        </div>
+      </div>
+
       <button type="button" class="signout" id="btn-logout">Sign out</button>
     </div>
   </div>
@@ -335,6 +350,7 @@
     <p>Notes waiting to be passed stay under Notes to pass on the payer's note until Passed is tapped. A note under Waiting can be shown again any time.</p>
     <h3>Passwords</h3>
     <p>Payer password: 6 characters &mdash; exactly 2 letters and 4 digits, in any order. Letters are case-sensitive. Payee password: 4 digits.</p>
+    <p>You can change your own password from Change password on the sticker. You need your current password, and the new password must follow your role's format above.</p>
     <button type="button" class="btn" id="btn-help-close">Close</button>
   </div>
 </div>
@@ -13531,6 +13547,74 @@ $('btn-expense').addEventListener('click', function () {
 $('btn-logout').addEventListener('click', function () {
   me = null;
   renderLogin();
+});
+/* ---- Change password: this phone only, never synced, never in a note.
+   Only the signed-in user's own password changes; the other user's
+   password is never touched. The current password must match first, so
+   picking up a signed-in phone is not enough to change it. The session
+   keeps going; the new password is used at the next sign-in. There is
+   no forgot-password or reset path. */
+function openChangePw() {
+  var role = me ? me.name : 'payer';
+  $('cpw-hint').textContent = role === 'payee' ?
+    'Payee password: 4 digits.' :
+    'Payer password: 6 characters: exactly 2 letters and 4 digits. Letters are case-sensitive.';
+  $('cpw-new').maxLength = role === 'payee' ? 4 : 6;
+  $('cpw-confirm').maxLength = role === 'payee' ? 4 : 6;
+  $('cpw-new').placeholder = role === 'payee' ? '1234' : 'ab1234';
+  $('cpw-confirm').placeholder = role === 'payee' ? '1234' : 'ab1234';
+  $('cpw-current').value = '';
+  $('cpw-new').value = '';
+  $('cpw-confirm').value = '';
+  setErr('cpw-err', '');
+  $('changepw-form').style.display = 'block';
+  $('cpw-current').focus();
+}
+function closeChangePw() {
+  $('cpw-current').value = '';
+  $('cpw-new').value = '';
+  $('cpw-confirm').value = '';
+  setErr('cpw-err', '');
+  $('changepw-form').style.display = 'none';
+}
+$('btn-changepw').addEventListener('click', function () {
+  if ($('changepw-form').style.display === 'block') closeChangePw();
+  else openChangePw();
+});
+$('btn-cpw-cancel').addEventListener('click', closeChangePw);
+$('cpw-current').addEventListener('input', function () {
+  this.value = this.value.replace(/[^A-Za-z0-9]/g, '').slice(0, 6);
+});
+function sanitizeNewPwInput(el) {
+  if (me && me.name === 'payee') el.value = el.value.replace(/[^0-9]/g, '').slice(0, 4);
+  else el.value = el.value.replace(/[^A-Za-z0-9]/g, '').slice(0, 6);
+}
+$('cpw-new').addEventListener('input', function () { sanitizeNewPwInput(this); });
+$('cpw-confirm').addEventListener('input', function () { sanitizeNewPwInput(this); });
+$('btn-cpw-save').addEventListener('click', function () {
+  if (!me) { setErr('cpw-err', 'Please sign in first.'); sfxFail(); return; }
+  var cur = $('cpw-current').value;
+  var nw = $('cpw-new').value;
+  var cf = $('cpw-confirm').value;
+  setErr('cpw-err', '');
+  verifyPw(me, cur).then(function (ok) {
+    if (!ok) { setErr('cpw-err', 'Incorrect password.'); sfxFail(); return; }
+    if (!validPasswordFor(me.name, nw)) { setErr('cpw-err', pwMsgFor(me.name)); sfxFail(); return; }
+    if (nw !== cf) { setErr('cpw-err', 'New passwords do not match.'); sfxFail(); return; }
+    var s = makeSalt();
+    hashBoth(s, nw).then(function (h) {
+      var old = { salt: me.salt, hash256: me.hash256, hashFallback: me.hashFallback };
+      me.salt = s; me.hash256 = h.hash256; me.hashFallback = h.hashFallback;
+      if (!saveUsers(users)) {
+        me.salt = old.salt; me.hash256 = old.hash256; me.hashFallback = old.hashFallback;
+        setErr('cpw-err', 'Save failed. Please try again.'); sfxFail(); return;
+      }
+      autoBackup();
+      closeChangePw();
+      toast('Password changed.');
+      sfxSuccess();
+    });
+  });
 });
 /* ---- Notes: QR codes (or pasted text) pass one proposal or one receipt
    between the two phones. No service, no account, no setup, no requests.
