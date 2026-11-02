@@ -183,7 +183,6 @@
     </div>
 
     <div class="st-section">
-      <h3>Ledger</h3>
       <div id="ledger-list"></div>
     </div>
   </div>
@@ -448,20 +447,12 @@ function render() {
   $('sec-opening').style.display = openingSet ? 'none' : 'block';
   var list = $('ledger-list');
   list.innerHTML = '';
-  var rows = ledgerModel();
+  var rows = ledgerModel().filter(function (row) { return row.kind !== 'opening'; });
   if (!rows.length) {
     list.innerHTML = '<div class="small">No records yet.</div>';
     return;
   }
   rows.forEach(function (row) {
-    if (row.kind === 'opening') {
-      var orow = document.createElement('div');
-      orow.className = 'lrow';
-      orow.innerHTML = '<div class="lt">Opening</div><div class="la">' +
-        esc(fmtMoney(opening)) + ' · Balance ' + esc(fmtMoney(row.run)) + '</div>';
-      list.appendChild(orow);
-      return;
-    }
     if (row.kind === 'carry') {
       var crow = document.createElement('div');
       crow.className = 'lrow';
