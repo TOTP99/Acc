@@ -8,7 +8,8 @@
 <style>
 /* ============ 设计变量（全站只用这一套） ============ */
 :root{
-  --primary:#0f2a44; --primary-dark:#0a1f33; --primary-soft:#e8edf2;
+  /* TD 银行绿 */
+  --primary:#00a651; --primary-dark:#008f46; --primary-soft:#e6f5ec;
   --income:#1e6b4a; --income-soft:#e6f2ec;
   --expense:#8f2b23; --expense-soft:#f9ebe9;
   --pending:#9a6b1f; --pending-soft:#faf3e0;
@@ -16,7 +17,7 @@
   --text:#16202b; --text-sub:#5b6773; --text-faint:#8b96a1;
   --danger:#8f2b23;
   --radius:12px; --radius-sm:8px;
-  --shadow:0 1px 2px rgba(15,42,68,.06);
+  --shadow:0 1px 2px rgba(0,102,51,.08);
   --fs-title:20px; --fs-h:17px; --fs-b:15px; --fs-s:13px; --fs-xs:12px;
   --gap:12px;
 }
@@ -34,10 +35,10 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 /* ============ 视图 ============ */
 .view{display:none; min-height:100dvh;}
 .view.active{display:block;}
-.shell{max-width:560px; margin:0 auto; padding:20px 16px calc(96px + env(safe-area-inset-bottom));}
-.shell-narrow{max-width:420px; margin:0 auto; padding:32px 20px calc(32px + env(safe-area-inset-bottom));}
+.shell{max-width:560px; margin:0 auto; padding:12px 16px calc(92px + env(safe-area-inset-bottom));}
+.shell-narrow{max-width:420px; margin:0 auto; padding:20px 20px calc(24px + env(safe-area-inset-bottom));}
 h1{font-size:24px; margin:0 0 6px;}
-.sub{color:var(--text-sub); font-size:var(--fs-s); line-height:1.6; margin:0 0 20px;}
+.sub{color:var(--text-sub); font-size:var(--fs-s); line-height:1.6; margin:0 0 14px;}
 
 /* ============ 卡片与表单 ============ */
 .card{background:var(--card); border:1px solid var(--divider); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; margin-bottom:var(--gap);}
@@ -54,7 +55,7 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
   width:100%; min-height:48px; border:0; border-radius:12px; font-size:16px; font-weight:700;
   background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px;
 }
-.btn:active{opacity:.88;}
+.btn:active{opacity:.88; background:var(--primary-dark);}
 .btn.secondary{background:#eef1f4; color:var(--text);}
 .btn.ghost{background:transparent; color:var(--text-sub);}
 .btn.danger{background:var(--danger); color:#fff;}
@@ -78,15 +79,21 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
 .user-card .nm{font-size:var(--fs-h); font-weight:700;}
 .user-card .hint{font-size:var(--fs-s); color:var(--text-sub);}
 
+/* ============ 猫 Logo ============ */
+.logo-login{width:96px; height:96px; border-radius:50%; border:3px solid var(--primary); object-fit:cover; display:block; margin:0 auto 12px;}
+.logo-top{width:32px; height:32px; border-radius:50%; border:2px solid var(--primary); object-fit:cover; flex:0 0 auto;}
+.login-hero{text-align:center;}
+.login-hero h1{margin-top:0;}
+
 /* ============ 顶部栏与月份导航 ============ */
 .topbar{
   display:flex; align-items:center; justify-content:space-between; gap:8px;
-  padding:12px 16px calc(12px + 0px); position:sticky; top:0; z-index:20;
+  padding:10px 16px; position:sticky; top:0; z-index:20;
   background:rgba(242,244,247,.96); backdrop-filter:blur(8px);
 }
 .topbar .brand{font-size:var(--fs-title); font-weight:800; letter-spacing:.5px;}
 .topbar .who{font-size:var(--fs-s); color:var(--text-sub);}
-.monthnav{display:flex; align-items:center; justify-content:space-between; gap:8px; margin:4px 0 12px;}
+.monthnav{display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 8px;}
 .monthnav .nav-btn{
   min-width:44px; min-height:44px; border-radius:50%; border:1px solid var(--divider);
   background:var(--card); font-size:20px; color:var(--text);
@@ -97,14 +104,14 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
 
 /* ============ 总览卡片 ============ */
 .overview{display:grid; grid-template-columns:1fr 1fr; gap:var(--gap);}
-.stat{background:var(--card); border:1px solid var(--divider); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px 16px;}
+.stat{background:var(--card); border:1px solid var(--divider); border-radius:var(--radius); box-shadow:var(--shadow); padding:11px 14px;}
 .stat .lb{font-size:var(--fs-s); color:var(--text-sub); margin-bottom:4px;}
-.stat .val{font-size:21px; font-weight:800; line-height:1.3; font-variant-numeric:tabular-nums;}
+.stat .val{font-size:19px; font-weight:800; line-height:1.3; font-variant-numeric:tabular-nums;}
 .stat .val.in{color:var(--income);} .stat .val.out{color:var(--expense);}
 .stat.wide{grid-column:1 / -1;}
-.bal-row{display:flex; gap:16px; flex-wrap:wrap; margin-top:6px;}
+.bal-row{display:flex; gap:16px; flex-wrap:wrap; margin-top:4px;}
 .bal-row span{font-size:var(--fs-s); color:var(--text-sub);}
-.bal-row b{font-size:19px; font-weight:800; color:var(--text); font-variant-numeric:tabular-nums;}
+.bal-row b{font-size:17px; font-weight:800; color:var(--text); font-variant-numeric:tabular-nums;}
 .pending-line{
   background:var(--pending-soft); border:1px solid #e8dcc0; border-radius:var(--radius);
   padding:12px 16px; margin-bottom:var(--gap); font-size:var(--fs-b); color:#6b5316; line-height:1.5;
@@ -113,7 +120,7 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
 .carry-line{font-size:var(--fs-s); color:var(--text-sub); line-height:1.7; margin-top:6px;}
 
 /* ============ Tabs ============ */
-.tabs{display:flex; gap:8px; margin:2px 0 12px; overflow-x:auto; scrollbar-width:none;}
+.tabs{display:flex; gap:8px; margin:0 0 8px; overflow-x:auto; scrollbar-width:none;}
 .tabs::-webkit-scrollbar{display:none;}
 .tab{
   flex:1; min-height:44px; border:1px solid var(--divider); background:var(--card); border-radius:999px;
@@ -135,7 +142,7 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
 .group-title{font-size:var(--fs-s); font-weight:700; color:var(--pending); margin:14px 2px 8px; letter-spacing:.5px;}
 .tx{
   width:100%; text-align:left; background:var(--card); border:0; border-bottom:1px solid var(--divider);
-  padding:13px 16px; display:flex; align-items:center; gap:12px; min-height:72px;
+  padding:11px 14px; display:flex; align-items:center; gap:12px; min-height:66px;
 }
 .tx:first-of-type{border-top-left-radius:var(--radius); border-top-right-radius:var(--radius);}
 .tx:last-of-type{border-bottom:0; border-bottom-left-radius:var(--radius); border-bottom-right-radius:var(--radius);}
@@ -150,7 +157,7 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
 .pill.rejected{background:#f0f0f0; color:var(--text-sub);}
 .pill.method{background:#eef1f4; color:var(--text-sub);}
 .mini-actions{display:flex; gap:8px; margin-left:auto;}
-.mini-actions .btn{min-height:40px; padding:0 12px; font-size:13px;}
+.mini-actions .btn{min-height:44px; padding:0 12px; font-size:13px;}
 .wait-note{font-size:var(--fs-s); color:var(--text-sub); margin-left:auto; white-space:nowrap;}
 .empty{text-align:center; padding:44px 20px; color:var(--text-sub); line-height:1.8;}
 
@@ -161,7 +168,7 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
   background:linear-gradient(180deg, rgba(244,246,245,0), var(--bg) 35%);
 }
 .fab-wrap .inner{max-width:560px; margin:0 auto;}
-.fab{font-size:17px; min-height:52px; box-shadow:0 8px 20px rgba(26,92,74,.35);}
+.fab{font-size:17px; min-height:52px; box-shadow:0 8px 20px rgba(0,166,81,.35);}
 
 /* ============ 弹窗（结构铁律） ============ */
 .modal{
@@ -223,49 +230,165 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
 .toast.show{transform:translate(-50%, 0);}
 .toast.err{background:var(--danger);}
 .danger-zone{border-top:1px solid var(--divider); margin-top:8px; padding-top:8px;}
+
+/* ============ 主界面固定框：顶栏/导航/总览/Tab 不动，只明细内部滚动 ============ */
+#view-app.active{display:flex; flex-direction:column; height:100dvh; overflow:hidden;}
+#view-app .topbar{flex:0 0 auto; position:static;}
+#view-app .shell.app-shell{
+  flex:1 1 auto; min-height:0; display:flex; flex-direction:column; overflow:hidden;
+  padding:12px 16px calc(10px + env(safe-area-inset-bottom));
+}
+#view-app .col-left{flex:0 0 auto;}
+#view-app .col-right{flex:1 1 auto; min-height:0; display:flex; flex-direction:column;}
+#view-app .col-right .tabs{flex:0 0 auto;}
+#view-app .col-right #pending-group{flex:0 0 auto;}
+#view-app .col-right #tx-list-wrap{flex:1 1 auto; min-height:0; overflow-y:auto; padding-bottom:88px;}
+
+/* ============ 保留期限滑杆（TD 绿） ============ */
+input[type=range]{
+  -webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:3px;
+  background:var(--primary-soft); outline:none; margin:10px 0 4px; padding:0;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; appearance:none; width:28px; height:28px; border-radius:50%;
+  background:var(--primary); border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.25);
+}
+input[type=range]::-moz-range-thumb{
+  width:28px; height:28px; border-radius:50%;
+  background:var(--primary); border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.25);
+}
+input[type=range]::-moz-range-track{height:6px; border-radius:3px; background:var(--primary-soft);}
+.range-val{font-weight:800; color:var(--primary); font-variant-numeric:tabular-nums;}
+
+/* ============ 克制动画：弹窗淡入上滑、累计数字淡入、Logo 轻按回弹 ============ */
+.modal.open .modal-box{animation:modalIn .22s ease-out;}
+@keyframes modalIn{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
+.num-flash{animation:numIn .45s ease-out;}
+@keyframes numIn{from{opacity:.35;} to{opacity:1;}}
+.logo-login{transition:transform .18s ease;}
+.logo-login:active{transform:scale(.94);}
+.initial-line{font-size:var(--fs-s); color:var(--text-sub); line-height:1.7; margin-top:6px;}
+
+/* ============ 横屏：主界面两列，框体 100dvh 不滚动，仅明细内部滚动 ============ */
+@media (orientation: landscape) {
+  #view-app.active{display:flex; flex-direction:column; height:100dvh; overflow:hidden;}
+  #view-app .topbar{position:static; flex:0 0 auto; padding:8px 16px;}
+  #view-app .shell.app-shell{
+    flex:1 1 auto; min-height:0; width:100%; max-width:1020px;
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+    display:grid; grid-template-columns:340px minmax(0, 1fr); gap:16px; align-items:start;
+  }
+  .col-left{min-height:0; overflow-y:auto; padding-bottom:84px;}
+  .col-right{min-height:0; display:flex; flex-direction:column;}
+  .col-right .tabs{flex:0 0 auto;}
+  .col-right #pending-group{flex:0 0 auto;}
+  .col-right #tx-list-wrap{flex:1 1 auto; min-height:0; overflow-y:auto; padding-bottom:84px;}
+  .logo-top{width:28px; height:28px;}
+  /* 登录屏横屏两列：左 Logo+标题，右卡片+表单 */
+  #view-login .shell-narrow{display:grid; grid-template-columns:1fr 1.25fr; gap:20px; align-items:center; max-width:760px;}
+  #view-login .logo-login{width:72px; height:72px; margin-bottom:8px;}
+  #view-login h1{font-size:21px;}
+  /* 设置屏横屏放宽 */
+  #view-setup .shell-narrow{max-width:760px;}
+  /* 弹窗横屏放宽，内容区内部滚动、按钮栏钉死（结构本身已保证） */
+  .modal-box{max-width:640px;}
+}
+
+/* ============ 矮竖屏再收紧一档（触控目标不动，只压间距字号） ============ */
+@media (orientation: portrait) and (max-height: 700px) {
+  .shell{padding-top:8px;}
+  .stat{padding:8px 12px;}
+  .stat .val{font-size:17px;}
+  .tx{min-height:60px; padding:9px 14px;}
+  .card{padding:14px;}
+}
+
+/* ============ 数据安全与终审补丁 ============ */
+.btn:disabled{opacity:.55;}
+.tx > div{min-width:0;}
+.tx .amt,.pill{flex-shrink:0;}
+.view.active{animation:viewIn .25s ease;}
+@keyframes viewIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+#tx-list-wrap > *{animation:listIn .25s ease;}
+@keyframes listIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+.empty-cat{width:56px; height:56px; border-radius:50%; object-fit:cover; display:block; margin:0 auto 10px; border:2px solid var(--primary); opacity:.85;}
+@media (max-width: 360px){
+  .shell,#view-app .shell.app-shell{padding-left:12px; padding-right:12px;}
+  .stat{padding:9px 10px;}
+  .stat .val{font-size:16px;}
+  .bal-row b{font-size:15px;}
+  .tab{font-size:13px; padding:0 6px;}
+  .tx{padding:10px 12px;}
+  .tx .amt{font-size:15px;}
+  .monthnav .title-btn{font-size:17px;}
+  .btn{font-size:15px;}
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important;}
+}
+
+/* ============ 对账单打印：只印对账单 ============ */
+#print-area{display:none;}
+@media print{
+  body{background:#fff !important;}
+  body > *:not(#print-area){display:none !important;}
+  #print-area{display:block !important; color:#111;}
+  .stmt{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; font-size:12px; line-height:1.5;}
+  .stmt h1{font-size:18px; margin:0 0 4px; text-align:center;}
+  .stmt .meta{text-align:center; color:#333; margin-bottom:10px;}
+  .stmt h2{font-size:14px; margin:14px 0 6px; border-bottom:1px solid #111; padding-bottom:3px;}
+  .stmt table{width:100%; border-collapse:collapse; margin-bottom:6px;}
+  .stmt th,.stmt td{border:1px solid #999; padding:4px 6px; text-align:left; font-variant-numeric:tabular-nums;}
+  .stmt td.num,.stmt th.num{text-align:right;}
+  .stmt .foot{color:#333; font-size:11px; margin-top:4px;}
+  .stmt .tot{font-weight:700;}
+}
+
 </style>
 </head>
 <body>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="print-area" aria-hidden="true"></div>
+
+<!-- ================= 数据恢复（主数据损坏且无可用备份时） ================= -->
+<section id="view-recovery" class="view">
+  <div class="shell-narrow">
+    <h1>数据恢复</h1>
+    <p class="sub">本地数据损坏，且没有可用的自动备份，无法自动恢复。残留数据不会被覆盖，你可以先导出，再决定是否重新开始。</p>
+    <div class="card" id="recovery-detail" style="line-height:1.7;"></div>
+    <button id="btn-recovery-export" class="btn secondary" type="button" style="margin-bottom:12px;">导出残留数据</button>
+    <button id="btn-recovery-reset" class="btn danger" type="button">清除并重新开始</button>
+  </div>
+</section>
 
 <!-- ================= 设置屏（首次打开） ================= -->
 <section id="view-setup" class="view">
   <div class="shell-narrow">
     <h1>财务审计</h1>
-    <p class="sub">两个人共用一本账。先设置两位用户的名字和密码，设置完成后进入登录。密码为 6 位数字，用户名为 2–6 个英文字母。</p>
     <div class="card">
       <div class="field">
-        <label for="setup-name1">用户一 · 用户名</label>
+        <label for="setup-name1">用户名</label>
         <input id="setup-name1" type="text" placeholder="2–6 个英文字母，如 AB" maxlength="6" autocomplete="off">
         <div id="setup-name1-err" class="field-error"></div>
       </div>
       <div class="field">
-        <label for="setup-pw1">用户一 · 密码</label>
+        <label for="setup-pw1">密码</label>
         <input id="setup-pw1" type="password" inputmode="numeric" maxlength="6" placeholder="6 位数字" autocomplete="off">
         <div id="setup-pw1-err" class="field-error"></div>
       </div>
-      <div class="field">
-        <label for="setup-name2">用户二 · 用户名</label>
-        <input id="setup-name2" type="text" placeholder="2–6 个英文字母，如 CD" maxlength="6" autocomplete="off">
-        <div id="setup-name2-err" class="field-error"></div>
-      </div>
-      <div class="field">
-        <label for="setup-pw2">用户二 · 密码</label>
-        <input id="setup-pw2" type="password" inputmode="numeric" maxlength="6" placeholder="6 位数字" autocomplete="off">
-        <div id="setup-pw2-err" class="field-error"></div>
-      </div>
-      <button id="btn-setup-start" class="btn" type="button">开始使用</button>
     </div>
-    <p class="sub" style="text-align:center;">密码只存哈希，不存明文。数据只保存在本机，不联网。</p>
+    <button id="btn-setup-start" class="btn" type="button">开始使用</button>
   </div>
 </section>
 
 <!-- ================= 登录屏 ================= -->
 <section id="view-login" class="view">
   <div class="shell-narrow">
+    <div class="login-hero">
+    <img class="logo-login" src="data:image/jpeg;base64,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" alt="狸花猫">
     <h1>财务审计</h1>
-    <p class="sub">点自己的名字，输入 6 位数字密码进入。</p>
+    </div>
     <div id="login-cards"></div>
     <div id="login-form" class="card" style="display:none;">
       <div class="field">
@@ -276,6 +399,7 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
       <button id="btn-login" class="btn" type="button">进入</button>
     </div>
     <button id="btn-invite-login" class="btn secondary" type="button" style="margin-top:12px;">邀请对方（扫码打开同一网址）</button>
+    <button id="btn-adduser-login" class="btn secondary" type="button" style="margin-top:12px; display:none;">添加用户</button>
     <button id="btn-help-login" class="btn secondary" type="button" style="margin-top:12px;">使用说明</button>
   </div>
 </section>
@@ -283,9 +407,12 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
 <!-- ================= 主界面 ================= -->
 <section id="view-app" class="view">
   <div class="topbar">
-    <div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <img class="logo-top" src="data:image/jpeg;base64,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" alt="狸花猫">
+      <div>
       <div class="brand">财务审计</div>
       <div class="who" id="who-line"></div>
+      </div>
     </div>
     <div style="display:flex; gap:8px;">
       <button id="btn-logout" class="btn small secondary" type="button">退出</button>
@@ -293,7 +420,8 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
     </div>
   </div>
 
-  <div class="shell">
+  <div class="shell app-shell">
+    <div class="col-left">
     <div class="monthnav">
       <button id="btn-prev-month" class="nav-btn" type="button" aria-label="上一月">‹</button>
       <button id="btn-month-title" class="title-btn" type="button">2026年11月</button>
@@ -318,8 +446,11 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
     <div class="card">
       <div class="lb" style="font-size:13px; color:var(--text-sub); margin-bottom:6px;">累计结余（全部已入账）</div>
       <div class="bal-row"><span>现金 <b id="total-balance-cash">CA$0.00</b></span><span>账面 <b id="total-balance-book">CA$0.00</b></span><span>总计 <b id="total-balance">CA$0.00</b></span></div>
+      <div class="initial-line" id="initial-line"></div>
       <div class="carry-line" id="carry-line" style="display:none;"></div>
     </div>
+    </div>
+    <div class="col-right">
 
     <div class="tabs" role="tablist">
       <button class="tab active" type="button" data-tab="all" id="tab-all">全部</button>
@@ -331,6 +462,7 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
 
     <div id="pending-group"></div>
     <div id="tx-list-wrap"></div>
+    </div>
   </div>
 
   <div class="fab-wrap"><div class="inner">
@@ -393,7 +525,7 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
         <label for="entry-note">备注（可选）</label>
         <textarea id="entry-note" placeholder="例如：超市采购" maxlength="100"></textarea>
       </div>
-      <p class="sub" id="entry-hint" style="margin:0;">支出提交后需对方确认才能入账，确认前不计入支出总额。</p>
+      <p class="sub" id="entry-hint" style="margin:0;">支出需对方确认后才入账。</p>
     </div>
     <div class="modal-foot"><div class="row">
       <button class="btn secondary" type="button" data-close="modal-entry">取消</button>
@@ -417,23 +549,26 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
     <div class="modal-head"><h2>设置</h2><button class="x-btn" type="button" data-close="modal-settings" aria-label="关闭">×</button></div>
     <div class="modal-scroll">
       <div class="field">
-        <label for="retention-select">收支记录保留</label>
-        <select id="retention-select">
-          <option value="1">1 个月</option>
-          <option value="2">2 个月</option>
-          <option value="3" selected>3 个月</option>
-          <option value="4">4 个月</option>
-          <option value="5">5 个月</option>
-          <option value="6">6 个月</option>
-          <option value="7">7 个月</option>
-          <option value="8">8 个月</option>
-          <option value="9">9 个月</option>
-          <option value="10">10 个月</option>
-          <option value="11">11 个月</option>
-          <option value="12">12 个月</option>
-        </select>
-        <p class="sub" style="margin:6px 0 0;">最多 12 个月。超期收支明细自动清理，但保留最新一笔收入和支出，余额自动结转，累计结余不变；账号、密码、通知和设置本身不会被清理。</p>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <label for="retention-range" style="margin:0;">收支记录保留</label>
+          <span class="range-val" id="retention-val">3 个月</span>
+        </div>
+        <input id="retention-range" type="range" min="1" max="12" step="1" value="3">
       </div>
+      <div class="field">
+        <label>初始余额（开始记账之前已有的钱，可随时修改）</label>
+        <div class="row">
+          <div style="flex:1;">
+            <label for="initial-cash">现金</label>
+            <input id="initial-cash" type="number" inputmode="decimal" step="0.01" placeholder="0.00">
+          </div>
+          <div style="flex:1;">
+            <label for="initial-book">账面</label>
+            <input id="initial-book" type="number" inputmode="decimal" step="0.01" placeholder="0.00">
+          </div>
+        </div>
+      </div>
+      <button id="btn-save-initial" class="btn secondary" type="button" style="margin-bottom:14px;">保存初始余额</button>
       <div class="field">
         <label for="pw-old">当前密码</label>
         <input id="pw-old" type="password" inputmode="numeric" maxlength="6" placeholder="6 位数字" autocomplete="off">
@@ -451,11 +586,25 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
       </div>
       <button id="btn-change-pw" class="btn" type="button" style="margin-bottom:14px;">修改密码</button>
       <div class="row" style="margin-bottom:10px;">
-        <button id="btn-export" class="btn secondary" type="button">导出备份</button>
+        <button id="btn-export" class="btn secondary" type="button">导出备份文件</button>
         <button id="btn-import" class="btn secondary" type="button">导入备份</button>
       </div>
+      <button id="btn-statement" class="btn secondary" type="button" style="margin-bottom:14px;">导出对账单</button>
       <button id="btn-invite-settings" class="btn secondary" type="button" style="margin-bottom:14px;">邀请对方（二维码）</button>
+      <button id="btn-adduser-settings" class="btn secondary" type="button" style="margin-bottom:14px; display:none;">添加用户</button>
       <button id="btn-help-settings" class="btn secondary" type="button" style="margin-bottom:14px;">使用说明</button>
+      <div class="field">
+        <label>数据安全</label>
+        <div id="safety-status" style="font-size:13px; color:var(--text-sub); line-height:1.7;"></div>
+        <div class="row" style="margin-top:10px;">
+          <button id="btn-restore-auto" class="btn secondary" type="button">恢复上次自动备份</button>
+          <button id="btn-clean-log" class="btn secondary" type="button">查看清理记录</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>音效</label>
+        <button id="btn-sound-toggle" class="btn secondary" type="button">音效：开</button>
+      </div>
       <input id="import-file" type="file" accept=".json,application/json" style="display:none;">
       <div class="danger-zone">
         <button id="btn-wipe" class="btn danger" type="button">清除全部数据</button>
@@ -484,7 +633,6 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
     <div class="modal-head"><h2>通知对方</h2><button class="x-btn" type="button" data-close="modal-notify" aria-label="关闭">×</button></div>
     <div class="modal-scroll">
       <textarea id="notify-text" readonly style="min-height:170px;"></textarea>
-      <p class="sub" style="margin:10px 0 0;">复制后发给对方，或直接用短信 / 邮件发送。</p>
     </div>
     <div class="modal-foot">
       <div class="row">
@@ -502,14 +650,35 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
   <div class="modal-box">
     <div class="modal-head"><h2>邀请对方</h2><button class="x-btn" type="button" data-close="modal-invite" aria-label="关闭">×</button></div>
     <div class="modal-scroll" style="text-align:center;">
-      <p class="sub" style="text-align:center;">对方用手机扫码，打开同一网址，用自己的账号登录。</p>
       <img id="invite-qr" alt="邀请二维码" style="width:260px; height:260px; max-width:100%; border:1px solid var(--divider); border-radius:12px; background:#fff;">
       <p id="invite-qr-fail" class="sub" style="display:none; text-align:center;">二维码加载失败（可能离线），请直接复制下方网址发给对方。</p>
       <p id="invite-url" style="word-break:break-all; font-size:13px; color:var(--text-sub); margin:14px 0;"></p>
       <button id="btn-invite-copy" class="btn secondary" type="button">复制网址</button>
-      <p class="sub" style="margin:10px 0 0;">记账功能本身完全离线可用，二维码只在邀请时需要联网生成。</p>
     </div>
     <div class="modal-foot"><button class="btn" type="button" data-close="modal-invite">关闭</button></div>
+  </div>
+</div>
+
+<!-- ================= 添加用户 ================= -->
+<div id="modal-adduser" class="modal" role="dialog" aria-modal="true" aria-label="添加用户">
+  <div class="modal-box">
+    <div class="modal-head"><h2>添加用户</h2><button class="x-btn" type="button" data-close="modal-adduser" aria-label="关闭">×</button></div>
+    <div class="modal-scroll">
+      <div class="field">
+        <label for="adduser-name">用户名</label>
+        <input id="adduser-name" type="text" placeholder="2–6 个英文字母" maxlength="6" autocomplete="off">
+        <div id="adduser-name-err" class="field-error"></div>
+      </div>
+      <div class="field">
+        <label for="adduser-pw">密码</label>
+        <input id="adduser-pw" type="password" inputmode="numeric" maxlength="6" placeholder="6 位数字" autocomplete="off">
+        <div id="adduser-pw-err" class="field-error"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><div class="row">
+      <button class="btn secondary" type="button" data-close="modal-adduser">取消</button>
+      <button id="btn-adduser-submit" class="btn" type="button">添加</button>
+    </div></div>
   </div>
 </div>
 
@@ -518,18 +687,50 @@ textarea{min-height:72px; padding:10px 12px; resize:vertical;}
   <div class="modal-box">
     <div class="modal-head"><h2>使用说明</h2><button class="x-btn" type="button" data-close="modal-help" aria-label="关闭">×</button></div>
     <div class="modal-scroll">
-      <p style="line-height:1.8; margin:0;"><b>1. 这是什么</b><br>两个人的记账本：记收入、记支出、算余额，现金和账面分开算。数据只存在这台设备上，不上传到网上。</p>
-      <p style="line-height:1.8; margin:16px 0 0;"><b>2. 第一次用</b><br>打开后先设置两个人：每人一个用户名（2–6 个英文字母）和一个 6 位数字密码，两人的用户名和密码都不能相同。设好后，每次点自己的名字、输密码进入。</p>
+      <p style="line-height:1.8; margin:0;"><b>1. 这是什么</b><br>记账本：记收入、记支出、算余额，现金和账面分开算。密码只存哈希，不存明文；数据只保存在本机，不上传到网上。</p>
+      <p style="line-height:1.8; margin:16px 0 0;"><b>2. 第一次用</b><br>先设好自己的用户名（2–6 个英文字母）和 6 位数字密码，点“开始使用”就能登录记账。对方任何时间都可以再加（登录屏或设置里的“添加用户”）。用户名区分大小写，AB 和 ab 算不同名字。</p>
       <p style="line-height:1.8; margin:16px 0 0;"><b>3. 记一笔</b><br>点底部“＋ 记一笔”：选收入还是支出，选现金还是账面，填日期、分类、金额，备注可写可不写，点提交。</p>
       <p style="line-height:1.8; margin:16px 0 0;"><b>4. 收入和支出不一样</b><br>收入提交就直接入账。支出提交后先是“待对方确认”，还不算进支出总额，必须对方确认才入账。</p>
       <p style="line-height:1.8; margin:16px 0 0;"><b>5. 对方怎么确认</b><br>对方登录后，在“待确认”里看到你记的支出，点“确认入账”就入账，点“驳回”就不入账。驳回的记录还留着，能查到。自己记的支出不能自己确认。</p>
       <p style="line-height:1.8; margin:16px 0 0;"><b>6. 看账</b><br>顶部左右箭头换月份，点中间年月可以选年和月。总览里收入、支出、结余都分现金、账面和总计。点明细里任何一行，能看到是谁记的、谁确认的、什么时候。</p>
       <p style="line-height:1.8; margin:16px 0 0;"><b>7. 通知对方</b><br>记完一笔会自动弹出通知，可以复制、发短信或发邮件给对方。“通知”一栏里也能直接发消息，对方点开后会显示“已读”和阅读时间。</p>
-      <p style="line-height:1.8; margin:16px 0 0;"><b>8. 请对方加入</b><br>在登录屏或设置里点“邀请对方”，对方用手机扫二维码，打开同一个网址，用自己的账号登录。</p>
-      <p style="line-height:1.8; margin:16px 0 0;"><b>9. 旧记录怎么处理</b><br>设置里“收支记录保留”默认 3 个月，最多 12 个月。超过期限的旧明细自动删除，但最新一笔收入、一笔支出会保留，余额会自动结转，累计结余不变。</p>
-      <p style="line-height:1.8; margin:16px 0 0;"><b>10. 备份、改密码、退出</b><br>设置里可以导出备份（存成一个文件）、导入备份（换手机时把文件导进来）、修改自己的密码。主界面右上角“退出”回到登录屏。</p>
+      <p style="line-height:1.8; margin:16px 0 0;"><b>8. 请对方加入</b><br>在登录屏或设置里点“邀请对方”，对方用手机扫二维码，打开同一个网址，用自己的账号登录。二维码只在邀请时需要联网生成一次，记账本身离线可用。</p>
+      <p style="line-height:1.8; margin:16px 0 0;"><b>9. 旧记录怎么处理</b><br>设置里拖动滑杆选收支记录保留期限（1–12 个月，默认 3 个月）。超过期限的旧明细自动删除，但最新一笔收入、一笔支出会保留，余额会自动结转，累计结余不变。清理不碰账号、密码、通知和设置本身。</p>
+      <p style="line-height:1.8; margin:16px 0 0;"><b>10. 初始余额、备份、改密码、退出</b><br>设置里可以填初始余额（开始记账之前已有的钱，分现金和账面），累计结余里会写明其中初始余额是多少。设置里还可以导出备份（存成一个文件，含初始余额）、导入备份（换手机时把文件导进来）、修改自己的密码。主界面右上角“退出”回到登录屏。每次保存后都会自动备份，设置里“数据安全”可以恢复上次自动备份；导入前会先确认并备份当前状态，文件不对就拒绝导入；每次清理都会记一笔清理记录，可在“数据安全”里查看。对账单可打印或存 PDF，CSV 可用表格软件打开，备份文件用于恢复。</p>
     </div>
     <div class="modal-foot"><button class="btn" type="button" data-close="modal-help">我知道了</button></div>
+  </div>
+</div>
+
+<!-- ================= 清理记录 ================= -->
+<div id="modal-cleanlog" class="modal" role="dialog" aria-modal="true" aria-label="清理记录">
+  <div class="modal-box">
+    <div class="modal-head"><h2>清理记录</h2><button class="x-btn" type="button" data-close="modal-cleanlog" aria-label="关闭">×</button></div>
+    <div class="modal-scroll"><div id="cleanlog-body"></div></div>
+    <div class="modal-foot"><button class="btn" type="button" data-close="modal-cleanlog">关闭</button></div>
+  </div>
+</div>
+
+<!-- ================= 导出对账单 ================= -->
+<div id="modal-statement" class="modal" role="dialog" aria-modal="true" aria-label="导出对账单">
+  <div class="modal-box">
+    <div class="modal-head"><h2>导出对账单</h2><button class="x-btn" type="button" data-close="modal-statement" aria-label="关闭">×</button></div>
+    <div class="modal-scroll">
+      <div class="field">
+        <label>期间</label>
+        <div class="seg" role="group">
+          <button id="seg-period-month" type="button" class="on">本月</button>
+          <button id="seg-period-year" type="button">本年</button>
+          <button id="seg-period-all" type="button">全部</button>
+        </div>
+      </div>
+      <div id="stmt-summary" style="font-size:13px; color:var(--text-sub); line-height:1.7;"></div>
+      <button id="btn-statement-csv" class="btn secondary" type="button" style="margin-top:14px;">导出 CSV 表格</button>
+    </div>
+    <div class="modal-foot"><div class="row">
+      <button class="btn secondary" type="button" data-close="modal-statement">取消</button>
+      <button id="btn-statement-print" class="btn" type="button">打印 / 存为 PDF</button>
+    </div></div>
   </div>
 </div>
 
@@ -577,12 +778,47 @@ function uid() {
 /* ================= 轻提示 ================= */
 var toastTimer = null;
 function toast(msg, isErr) {
+  if (isErr) sfxFail();
   var t = $('toast');
   t.textContent = msg;
   t.className = 'toast show' + (isErr ? ' err' : '');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(function () { t.className = 'toast'; }, 2600);
 }
+
+/* ================= 音效：Web Audio 现場合成，无外部音频 ================= */
+var LS_SOUND = 'finance-audit-v1:sound';
+function loadSoundSetting() {
+  try { return localStorage.getItem(LS_SOUND) !== '0'; } catch (e) { return true; }
+}
+var soundOn = loadSoundSetting();
+var audioCtx = null;
+function unlockAudio() {
+  if (!soundOn) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  } catch (e) {}
+}
+document.addEventListener('pointerdown', unlockAudio, { passive: true });
+document.addEventListener('keydown', unlockAudio);
+function playTone(freq, delay, dur, type, vol) {
+  if (!soundOn || !audioCtx) return;
+  try {
+    var t0 = audioCtx.currentTime + delay;
+    var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(vol, t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t0); o.stop(t0 + dur + 0.05);
+  } catch (e) {}
+}
+function sfxClick() { unlockAudio(); playTone(1100, 0, 0.05, 'triangle', 0.02); }
+function sfxSuccess() { unlockAudio(); playTone(660, 0, 0.12, 'sine', 0.05); playTone(880, 0.09, 0.14, 'sine', 0.05); }
+function sfxFail() { unlockAudio(); playTone(170, 0, 0.13, 'sine', 0.05); }
+function saveSoundSetting() { try { localStorage.setItem(LS_SOUND, soundOn ? '1' : '0'); } catch (e) {} }
 
 /* ================= 密码哈希：SHA-256 优先，fallback 非明文 ================= */
 function hex(buf) {
@@ -644,15 +880,15 @@ function loadRecords() {
     return Array.isArray(r) ? r : [];
   } catch (e) { return []; }
 }
-function saveUsers(u) { localStorage.setItem(LS_USERS, JSON.stringify(u)); }
-function saveRecords(r) { localStorage.setItem(LS_RECORDS, JSON.stringify(r)); }
+function saveUsers(u) { return saveVerified(LS_USERS, u); }
+function saveRecords(r) { return saveVerified(LS_RECORDS, r); }
 var LS_RETENTION = 'finance-audit-v1:retention';
 function loadRetention() {
   var v = parseInt(localStorage.getItem(LS_RETENTION) || '3', 10);
   if (isNaN(v) || v < 1 || v > 12) return 3;
   return v;
 }
-function saveRetention(m) { localStorage.setItem(LS_RETENTION, String(m)); }
+function saveRetention(m) { return writeVerified(LS_RETENTION, String(m)); }
 /* 结转余额：旧明细清理后，已入账净额按现金/账面分开存入此处，仪表盘累计结余 = 结转 + 剩余已入账净额 */
 var LS_CARRY = 'finance-audit-v1:carry';
 function loadCarry() {
@@ -665,7 +901,20 @@ function loadCarry() {
     };
   } catch (e) { return { cash: 0, book: 0 }; }
 }
-function saveCarry(c) { localStorage.setItem(LS_CARRY, JSON.stringify(c)); }
+function saveCarry(c) { return saveVerified(LS_CARRY, c); }
+/* 初始余额：开始记账之前已有的钱，分现金/账面，随时可在设置里改；累计结余 = 初始 + 结转 + 全部已入账净额 */
+var LS_INITIAL = 'finance-audit-v1:initial';
+function loadInitial() {
+  try {
+    var v = JSON.parse(localStorage.getItem(LS_INITIAL) || 'null');
+    if (!v) return { cash: 0, book: 0 };
+    return {
+      cash: (typeof v.cash === 'number' && isFinite(v.cash)) ? Math.round(v.cash * 100) / 100 : 0,
+      book: (typeof v.book === 'number' && isFinite(v.book)) ? Math.round(v.book * 100) / 100 : 0
+    };
+  } catch (e) { return { cash: 0, book: 0 }; }
+}
+function saveInitial(v) { return saveVerified(LS_INITIAL, v); }
 /* 方式：旧记录无该字段时按现金计；方式不参与确认流程 */
 function methodOf(r) { return r.method === 'book' ? 'book' : 'cash'; }
 function methodLabel(r) { return methodOf(r) === 'book' ? '账面' : '现金'; }
@@ -677,7 +926,116 @@ function loadNotes() {
     return Array.isArray(n) ? n : [];
   } catch (e) { return []; }
 }
-function saveNotes(n) { localStorage.setItem(LS_NOTES, JSON.stringify(n)); }
+function saveNotes(n) { return saveVerified(LS_NOTES, n); }
+
+/* ================= 数据安全层：验读、自动备份、校验、清理日志 ================= */
+var LS_AUTO1 = 'finance-audit-v1:auto-backup';
+var LS_AUTO2 = 'finance-audit-v1:auto-backup-prev';
+var LS_CLEANLOG = 'finance-audit-v1:clean-log';
+/* 写后验读：写完立即读回比对，不一致重试一次，仍失败返回 false（调用方不得按“已保存”处理） */
+function writeVerified(key, json) {
+  var ok = false;
+  try { localStorage.setItem(key, json); ok = (localStorage.getItem(key) === json); } catch (e) { ok = false; }
+  if (!ok) {
+    try { localStorage.setItem(key, json); ok = (localStorage.getItem(key) === json); } catch (e2) { ok = false; }
+  }
+  return ok;
+}
+function saveVerified(key, val) {
+  var json;
+  try { json = JSON.stringify(val); } catch (e) { return false; }
+  return writeVerified(key, json);
+}
+/* 旧格式兼容：缺 method 按现金计，缺状态按收入已入账/支出待确认补，其余原样保留 */
+function normalizeRecords(list) {
+  if (!Array.isArray(list)) return [];
+  return list.map(function (r) {
+    if (!r || typeof r !== 'object') return null;
+    var n = {};
+    for (var k in r) n[k] = r[k];
+    n.id = (typeof r.id === 'string' && r.id) ? r.id : uid();
+    n.method = (r.method === 'book') ? 'book' : 'cash';
+    n.category = (typeof r.category === 'string') ? r.category : '';
+    n.note = (typeof r.note === 'string') ? r.note : '';
+    n.by = (typeof r.by === 'string') ? r.by : '';
+    n.createdAt = (typeof r.createdAt === 'string') ? r.createdAt : '';
+    n.confirmedBy = (typeof r.confirmedBy === 'string') ? r.confirmedBy : null;
+    n.confirmedAt = (typeof r.confirmedAt === 'string') ? r.confirmedAt : null;
+    if (n.status !== 'posted' && n.status !== 'pending' && n.status !== 'rejected') {
+      n.status = (n.type === 'income') ? 'posted' : 'pending';
+    }
+    return n;
+  }).filter(function (r) { return !!r; });
+}
+function isValidUser(u) {
+  return !!u && NAME_RE.test(u.name) && typeof u.salt === 'string' && !!u.salt &&
+    (typeof u.hash256 === 'string' || typeof u.hashFallback === 'string');
+}
+function isValidUsers(v) {
+  return Array.isArray(v) && v.length >= 1 && v.length <= 2 && v.every(isValidUser) &&
+    (v.length < 2 || v[0].name !== v[1].name);
+}
+function isValidRecord(r) {
+  return !!r && (r.type === 'income' || r.type === 'expense') &&
+    typeof r.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.date) &&
+    typeof r.amount === 'number' && isFinite(r.amount) && r.amount > 0 &&
+    (r.status === 'posted' || r.status === 'pending' || r.status === 'rejected') &&
+    (r.method === 'cash' || r.method === 'book') &&
+    typeof r.id === 'string' && !!r.id;
+}
+function isValidRecords(v) { return Array.isArray(v) && v.every(isValidRecord); }
+function isValidNotes(v) {
+  return Array.isArray(v) && v.every(function (n) {
+    return !!n && typeof n.id === 'string' && typeof n.from === 'string' && typeof n.content === 'string' &&
+      typeof n.createdAt === 'string' && (n.readAt === null || typeof n.readAt === 'string');
+  });
+}
+function isMoneyPair(v) {
+  return !!v && typeof v.cash === 'number' && isFinite(v.cash) && typeof v.book === 'number' && isFinite(v.book);
+}
+function isValidSnapshot(s) {
+  return !!s && s.app === 'finance-audit' && isValidUsers(s.users) && isValidRecords(s.records) &&
+    isMoneyPair(s.carry) && isMoneyPair(s.initial) && isValidNotes(s.notes) &&
+    typeof s.retention === 'number' && s.retention >= 1 && s.retention <= 12 &&
+    (s.sound === undefined || typeof s.sound === 'boolean');
+}
+/* 整体快照：每次成功保存的操作结束时存一份（最新 + 上一份），键名不变、旧数据可读 */
+function makeSnapshot() {
+  return { app: 'finance-audit', version: 1, savedAt: new Date().toISOString(),
+    users: users, records: records, carry: carry, initial: initial, notes: notes,
+    retention: loadRetention(), sound: soundOn };
+}
+function autoBackup() {
+  try {
+    var prev = null;
+    try { prev = localStorage.getItem(LS_AUTO1); } catch (e) {}
+    if (prev) { try { localStorage.setItem(LS_AUTO2, prev); } catch (e) {} }
+    localStorage.setItem(LS_AUTO1, JSON.stringify(makeSnapshot()));
+  } catch (e) {}
+}
+function readAuto(key) {
+  var raw;
+  try { raw = localStorage.getItem(key); } catch (e) { return null; }
+  if (!raw) return null;
+  try {
+    var s = JSON.parse(raw);
+    s.records = normalizeRecords(s.records);
+    return isValidSnapshot(s) ? s : null;
+  } catch (e) { return null; }
+}
+function loadCleanLog() {
+  try {
+    var v = JSON.parse(localStorage.getItem(LS_CLEANLOG) || '[]');
+    return Array.isArray(v) ? v : [];
+  } catch (e) { return []; }
+}
+function pushCleanLog(entry) {
+  try {
+    var log = loadCleanLog();
+    log.unshift(entry);
+    localStorage.setItem(LS_CLEANLOG, JSON.stringify(log.slice(0, 20)));
+  } catch (e) {}
+}
 /* 保留截止日：今天往前推 months 个月的那天（同日，遇小月则取当月最后一天） */
 function cutoffDate(months) {
   var d = new Date();
@@ -709,9 +1067,12 @@ function runRetentionCleanup(showToast) {
   }
   var deleted = records.filter(function (r) { return !keep(r); });
   if (!deleted.length) return 0;
-  var delInc = 0, delExp = 0;
-  deleted.forEach(function (r) { if (r.type === 'income') delInc++; else delExp++; });
+  var delInc = 0, delExp = 0, delIncAmt = 0, delExpAmt = 0;
+  deleted.forEach(function (r) {
+    if (r.type === 'income') { delInc++; delIncAmt += r.amount; } else { delExp++; delExpAmt += r.amount; }
+  });
   var c = loadCarry();
+  var carryBefore = { cash: c.cash, book: c.book };
   ['cash', 'book'].forEach(function (m) {
     var di = deleted.filter(function (r) { return r.type === 'income' && r.status === 'posted' && methodOf(r) === m; })
       .reduce(function (s, r) { return s + r.amount; }, 0);
@@ -719,19 +1080,81 @@ function runRetentionCleanup(showToast) {
       .reduce(function (s, r) { return s + r.amount; }, 0);
     c[m] = Math.round((c[m] + di - de) * 100) / 100;
   });
-  records = records.filter(keep);
-  saveRecords(records);
+  autoBackup(); // 清理前快照：先保后删
+  var oldRecords = records;
+  var nextRecords = records.filter(keep);
+  if (!saveRecords(nextRecords)) { toast('清理保存失败，清理未执行', true); return 0; }
+  records = nextRecords;
   carry = c;
-  saveCarry(c);
+  if (!saveCarry(c)) {
+    if (saveRecords(oldRecords)) { records = oldRecords; carry = carryBefore; }
+    toast('清理保存失败，已回滚，请重试', true);
+    return 0;
+  }
+  pushCleanLog({ at: new Date().toISOString(), delInc: delInc, delIncAmt: Math.round(delIncAmt * 100) / 100,
+    delExp: delExp, delExpAmt: Math.round(delExpAmt * 100) / 100,
+    carryBefore: carryBefore, carryAfter: { cash: c.cash, book: c.book } });
   if (showToast) toast('已清理 ' + delInc + ' 条收入、' + delExp + ' 条支出记录，余额已结转');
   return deleted.length;
 }
 
-/* ================= 状态 ================= */
-var users = loadUsers();
-var records = loadRecords();
-var notes = loadNotes();
-var carry = loadCarry();
+/* ================= 状态：启动时校验，损坏自动从备份恢复 ================= */
+function readRawPart(key) {
+  try { return localStorage.getItem(key); } catch (e) { return null; }
+}
+function parsePart(raw, fallback) {
+  if (raw === null || raw === undefined) return { missing: true, corrupt: false, value: fallback };
+  try { return { missing: false, corrupt: false, value: JSON.parse(raw) }; }
+  catch (e) { return { missing: false, corrupt: true, value: fallback }; }
+}
+var bootUsersP = parsePart(readRawPart(LS_USERS), null);
+var bootRecordsP = parsePart(readRawPart(LS_RECORDS), []);
+var bootNotesP = parsePart(readRawPart(LS_NOTES), []);
+var bootCarryP = parsePart(readRawPart(LS_CARRY), null);
+var bootInitialP = parsePart(readRawPart(LS_INITIAL), null);
+var bootRet = parseInt(readRawPart(LS_RETENTION) || '3', 10);
+var users = bootUsersP.value;
+var records = bootRecordsP.corrupt ? [] : normalizeRecords(bootRecordsP.value);
+var notes = bootNotesP.value;
+var carry = bootCarryP.value;
+var initial = bootInitialP.value;
+var dataBroken = false;
+var recoveredFromBackup = false;
+var recoveryInfo = '';
+(function bootCheck() {
+  var freshInstall = (users === null && records.length === 0 && !bootUsersP.corrupt && !bootRecordsP.corrupt);
+  var usersOk = !bootUsersP.corrupt && (freshInstall || isValidUsers(users));
+  var recordsOk = !bootRecordsP.corrupt && Array.isArray(bootRecordsP.value) && isValidRecords(records);
+  var secondaryBad = bootNotesP.corrupt || !isValidNotes(notes) || !isMoneyPair(carry) || !isMoneyPair(initial) ||
+    isNaN(bootRet) || bootRet < 1 || bootRet > 12;
+  if (usersOk && recordsOk && !secondaryBad) return;
+  var snap = readAuto(LS_AUTO1) || readAuto(LS_AUTO2);
+  if (snap) {
+    users = snap.users; records = normalizeRecords(snap.records); notes = snap.notes;
+    carry = { cash: snap.carry.cash, book: snap.carry.book };
+    initial = { cash: snap.initial.cash, book: snap.initial.book };
+    soundOn = snap.sound !== false;
+    saveUsers(users); saveRecords(records); saveNotes(notes); saveCarry(carry); saveInitial(initial);
+    saveRetention(snap.retention); saveSoundSetting();
+    recoveredFromBackup = true;
+    return;
+  }
+  if (!usersOk || !recordsOk) {
+    dataBroken = true;
+    var parts = [];
+    if (!usersOk) parts.push('用户数据无法读取');
+    if (!recordsOk) parts.push('收支记录无法读取');
+    if (secondaryBad) parts.push('部分设置数据异常');
+    recoveryInfo = parts.join('；') + '。';
+    users = Array.isArray(users) ? users : null;
+    records = Array.isArray(records) ? records : [];
+    return;
+  }
+  /* 只有次要数据异常且无备份：用默认值，不动主数据 */
+  if (!isValidNotes(notes)) notes = [];
+  if (!isMoneyPair(carry)) carry = { cash: 0, book: 0 };
+  if (!isMoneyPair(initial)) initial = { cash: 0, book: 0 };
+})();
 var me = null;            // 当前登录用户对象
 var viewYear, viewMonth;  // 当前查看的年月
 var tab = 'all';
@@ -741,6 +1164,7 @@ var pickerYear, pickerMonth;
 var detailId = null;
 var confirmAction = null; // 通用确认框回调
 var pendingLoginUser = null;
+var lastTotals = null;    // 上次累计结余（用于数字变化淡入动画）
 
 function initViewMonth() {
   var d = new Date();
@@ -751,7 +1175,7 @@ initViewMonth();
 
 /* ================= 视图切换 ================= */
 function showView(id) {
-  ['view-setup', 'view-login', 'view-app'].forEach(function (v) {
+  ['view-setup', 'view-login', 'view-app', 'view-recovery'].forEach(function (v) {
     $(v).classList.toggle('active', v === id);
   });
   document.body.style.overflow = '';
@@ -776,30 +1200,25 @@ function askConfirm(title, text, yesLabel, cb) {
 function setErr(id, msg) { $(id).textContent = msg || ''; }
 function validSetup() {
   var n1 = $('setup-name1').value.trim(), p1 = $('setup-pw1').value;
-  var n2 = $('setup-name2').value.trim(), p2 = $('setup-pw2').value;
   var ok = true;
   setErr('setup-name1-err', ''); setErr('setup-pw1-err', '');
-  setErr('setup-name2-err', ''); setErr('setup-pw2-err', '');
   if (!NAME_RE.test(n1)) { setErr('setup-name1-err', '用户名需为 2–6 个英文字母，不含数字、汉字和符号'); ok = false; }
   if (!PW_RE.test(p1)) { setErr('setup-pw1-err', '密码必须恰好 6 位数字'); ok = false; }
-  if (!NAME_RE.test(n2)) { setErr('setup-name2-err', '用户名需为 2–6 个英文字母，不含数字、汉字和符号'); ok = false; }
-  if (!PW_RE.test(p2)) { setErr('setup-pw2-err', '密码必须恰好 6 位数字'); ok = false; }
-  if (ok && n1 === n2) { setErr('setup-name2-err', '两个用户名不能相同'); ok = false; }
-  return ok ? { n1: n1, p1: p1, n2: n2, p2: p2 } : null;
+  return ok ? { n1: n1, p1: p1 } : null;
 }
 $('btn-setup-start').addEventListener('click', function () {
   var v = validSetup();
   if (!v) { toast('请按提示修正设置信息', true); return; }
-  var s1 = makeSalt(), s2 = makeSalt();
-  Promise.all([hashBoth(s1, v.p1), hashBoth(s2, v.p2)]).then(function (hs) {
-    users = [
-      { name: v.n1, salt: s1, hash256: hs[0].hash256, hashFallback: hs[0].hashFallback },
-      { name: v.n2, salt: s2, hash256: hs[1].hash256, hashFallback: hs[1].hashFallback }
-    ];
-    saveUsers(users);
+  var jobs = [{ n: v.n1, p: v.p1, s: makeSalt() }];
+  Promise.all(jobs.map(function (j) { return hashBoth(j.s, j.p); })).then(function (hs) {
+    users = jobs.map(function (j, i) {
+      return { name: j.n, salt: j.s, hash256: hs[i].hash256, hashFallback: hs[i].hashFallback };
+    });
     records = [];
-    saveRecords(records);
+    if (!saveUsers(users) || !saveRecords(records)) { toast('保存失败，请重试', true); return; }
+    autoBackup();
     toast('设置完成，请登录');
+    sfxSuccess();
     renderLogin();
   });
 });
@@ -829,6 +1248,8 @@ function renderLogin() {
   });
   $('login-form').style.display = 'none';
   $('login-pw').value = '';
+  /* 只有一位用户时显示“添加用户”，已有两位则隐藏 */
+  $('btn-adduser-login').style.display = (users.length < 2) ? 'block' : 'none';
 }
 function doLogin() {
   if (!pendingLoginUser) { toast('请先点自己的名字', true); return; }
@@ -928,11 +1349,24 @@ function renderMonth() {
     ' · 总计 ' + fmtMoney((yIncCash + yIncBook) - (yExpCash + yExpBook));
   var totIncCash = sumPostedMethod(records, 'income', 'cash'), totIncBook = sumPostedMethod(records, 'income', 'book');
   var totExpCash = sumPostedMethod(records, 'expense', 'cash'), totExpBook = sumPostedMethod(records, 'expense', 'book');
-  var balCash = carry.cash + totIncCash - totExpCash;
-  var balBook = carry.book + totIncBook - totExpBook;
+  /* 累计结余 = 初始余额 + 结转余额 + 全部已入账收支净额；本月/本年只算当期收支，不含初始余额 */
+  var balCash = initial.cash + carry.cash + totIncCash - totExpCash;
+  var balBook = initial.book + carry.book + totIncBook - totExpBook;
   $('total-balance-cash').textContent = fmtMoney(balCash);
   $('total-balance-book').textContent = fmtMoney(balBook);
   $('total-balance').textContent = fmtMoney(balCash + balBook);
+  $('initial-line').textContent = '其中初始余额 现金 ' + fmtMoney(initial.cash) + ' · 账面 ' + fmtMoney(initial.book);
+  /* 累计数字变化时做一次短暂淡入（只在数值真的变了时触发） */
+  if (!lastTotals || lastTotals.cash !== balCash || lastTotals.book !== balBook) {
+    lastTotals = { cash: balCash, book: balBook };
+    ['total-balance-cash', 'total-balance-book', 'total-balance'].forEach(function (id) {
+      var el = $(id);
+      el.classList.remove('num-flash');
+      void el.offsetWidth;
+      el.classList.add('num-flash');
+      setTimeout(function () { el.classList.remove('num-flash'); }, 500);
+    });
+  }
   var cl = $('carry-line');
   if (carry.cash !== 0 || carry.book !== 0) {
     cl.style.display = 'block';
@@ -995,7 +1429,10 @@ function pendingRow(r, withActions) {
 function emptyBlock(text) {
   var d = document.createElement('div');
   d.className = 'card empty';
-  d.innerHTML = '<div>' + text + '</div>';
+  var src = '';
+  var logo = document.querySelector('.logo-login');
+  if (logo && logo.src) src = logo.src;
+  d.innerHTML = (src ? '<img class="empty-cat" src="' + src + '" alt="">' : '') + '<div>' + text + '</div>';
   return d;
 }
 function renderList() {
@@ -1089,8 +1526,10 @@ function renderNotes() {
     if (!v) { setErr('note-input-err', '通知内容不能为空'); return; }
     setErr('note-input-err', '');
     notes.unshift({ id: uid(), from: me.name, content: v, createdAt: new Date().toISOString(), readAt: null });
-    saveNotes(notes);
+    if (!saveNotes(notes)) { notes.shift(); toast('保存失败，通知未发送，请重试', true); return; }
+    autoBackup();
     renderNotes();
+    sfxSuccess();
     toast('通知已发送');
   });
   var list = notes.slice().sort(function (a, b) { return a.createdAt < b.createdAt ? 1 : -1; });
@@ -1120,8 +1559,8 @@ function openNoteDetail(id) {
   /* 只有收信人阅读才标记已读，发信人自己看不改变状态 */
   if (n.from !== me.name && !n.readAt) {
     n.readAt = new Date().toISOString();
-    saveNotes(notes);
-    updateNotesBadge();
+    if (saveNotes(notes)) { autoBackup(); updateNotesBadge(); }
+    else { n.readAt = null; }
   }
   $('detail-body').innerHTML =
     '<div class="kv"><span class="k">发信人</span><span class="v">' + esc(n.from) + '</span></div>' +
@@ -1196,9 +1635,8 @@ function refreshCats() {
     o.value = c; o.textContent = c;
     sel.appendChild(o);
   });
-  $('entry-hint').textContent = entryType === 'income' ?
-    '收入提交后立即入账，计入本月收入。' :
-    '支出提交后需对方确认才能入账，确认前不计入支出总额。';
+  $('entry-hint').style.display = entryType === 'income' ? 'none' : 'block';
+  if (entryType !== 'income') $('entry-hint').textContent = '支出需对方确认后才入账。';
 }
 function setEntryType(t) {
   entryType = t;
@@ -1224,36 +1662,54 @@ $('btn-add').addEventListener('click', function () {
   setErr('entry-amount-err', '');
   openModal('modal-entry');
 });
+var submittingEntry = false;
+var lastEntrySubmit = null;
 $('btn-entry-submit').addEventListener('click', function () {
+  var btn = $('btn-entry-submit');
+  if (submittingEntry) return;
+  submittingEntry = true; btn.disabled = true;
+  function done() { submittingEntry = false; btn.disabled = false; }
   var date = $('entry-date').value;
   var cat = $('entry-cat').value;
   var raw = $('entry-amount').value.trim();
   var amount = parseFloat(raw);
-  if (!date) { toast('请选择日期', true); return; }
+  if (!date) { toast('请选择日期', true); done(); return; }
   if (isNaN(amount) || amount <= 0) {
     setErr('entry-amount-err', '金额必须大于 0');
-    return;
+    done(); return;
   }
   setErr('entry-amount-err', '');
   amount = Math.round(amount * 100) / 100;
+  var note = $('entry-note').value.trim();
+  var key = [me.name, entryType, entryMethod, cat, amount, date, note].join('|');
+  var now = Date.now();
+  if (lastEntrySubmit && lastEntrySubmit.key === key && now - lastEntrySubmit.t < 3000) {
+    toast('这笔刚刚已提交，请勿重复提交', true); done(); return;
+  }
   var rec = {
     id: uid(), type: entryType, method: entryMethod, date: date, category: cat, amount: amount,
-    note: $('entry-note').value.trim(), by: me.name, createdAt: new Date().toISOString(),
+    note: note, by: me.name, createdAt: new Date().toISOString(),
     status: entryType === 'income' ? 'posted' : 'pending',
     confirmedBy: null, confirmedAt: null
   };
-  records.push(rec);
-  saveRecords(records);
+  var next = records.concat([rec]);
+  if (!saveRecords(next)) { toast('保存失败，记录未保存，请重试', true); done(); return; }
+  records = next;
+  lastEntrySubmit = { key: key, t: now };
+  autoBackup();
+  done();
   closeModal('modal-entry');
   viewYear = parseInt(date.slice(0, 4), 10);
   viewMonth = parseInt(date.slice(5, 7), 10);
   renderMonth();
+  sfxSuccess();
   if (rec.type === 'income') {
     toast('收入已入账');
   } else {
     toast('支出已提交，待对方确认入账');
   }
-  openNotify(rec);
+  /* 只有一位用户时没有通知对象，不弹通知框；对方加入后可在详情里“再次通知对方” */
+  if (users.length >= 2) openNotify(rec);
 });
 
 /* ================= 确认 / 驳回 ================= */
@@ -1268,8 +1724,13 @@ function confirmTx(id) {
   r.status = 'posted';
   r.confirmedBy = me.name;
   r.confirmedAt = new Date().toISOString();
-  saveRecords(records);
+  if (!saveRecords(records)) {
+    r.status = 'pending'; r.confirmedBy = null; r.confirmedAt = null;
+    toast('保存失败，确认未保存，请重试', true); return;
+  }
+  autoBackup();
   renderMonth();
+  sfxSuccess();
   toast('已确认入账');
 }
 function rejectTx(id) {
@@ -1280,7 +1741,11 @@ function rejectTx(id) {
     r.status = 'rejected';
     r.confirmedBy = me.name;
     r.confirmedAt = new Date().toISOString();
-    saveRecords(records);
+    if (!saveRecords(records)) {
+      r.status = 'pending'; r.confirmedBy = null; r.confirmedAt = null;
+      toast('保存失败，驳回未保存，请重试', true); return;
+    }
+    autoBackup();
     renderMonth();
     toast('已驳回');
   });
@@ -1323,17 +1788,60 @@ function openDetail(id) {
   openModal('modal-detail');
 }
 
-/* ================= 设置：改密码 / 导出 / 导入 / 清除 / 退出 ================= */
+/* ================= 添加用户 ================= */
+function openAddUser() {
+  if (users.length >= 2) { toast('添加失败', true); return; }
+  $('adduser-name').value = ''; $('adduser-pw').value = '';
+  setErr('adduser-name-err', ''); setErr('adduser-pw-err', '');
+  openModal('modal-adduser');
+}
+$('btn-adduser-login').addEventListener('click', openAddUser);
+$('btn-adduser-settings').addEventListener('click', openAddUser);
+$('btn-adduser-submit').addEventListener('click', function () {
+  var n = $('adduser-name').value.trim(), p = $('adduser-pw').value;
+  var ok = true;
+  setErr('adduser-name-err', ''); setErr('adduser-pw-err', '');
+  if (!NAME_RE.test(n)) { setErr('adduser-name-err', '用户名需为 2–6 个英文字母，不含数字、汉字和符号'); ok = false; }
+  if (!PW_RE.test(p)) { setErr('adduser-pw-err', '密码必须恰好 6 位数字'); ok = false; }
+  /* 查重区分大小写：AB 和 ab 可并存 */
+  if (ok && users.some(function (u) { return u.name === n; })) {
+    setErr('adduser-name-err', '该用户名已存在（区分大小写）'); ok = false;
+  }
+  if (!ok) return;
+  var s = makeSalt();
+  hashBoth(s, p).then(function (h) {
+    users.push({ name: n, salt: s, hash256: h.hash256, hashFallback: h.hashFallback });
+    if (!saveUsers(users)) { users.pop(); toast('保存失败，添加未保存，请重试', true); return; }
+    autoBackup();
+    closeModal('modal-adduser');
+    sfxSuccess();
+    toast('已添加，请对方用自己的名字登录');
+    if (me) {
+      $('btn-adduser-settings').style.display = (users.length < 2) ? 'block' : 'none';
+    } else {
+      renderLogin();
+    }
+  });
+});
+/* ================= 设置：改密码 / 初始余额 / 导出 / 导入 / 清除 / 退出 ================= */
 $('btn-gear').addEventListener('click', function () {
-  $('retention-select').value = String(loadRetention());
+  var m = loadRetention();
+  $('retention-range').value = String(m);
+  $('retention-val').textContent = m + ' 个月';
+  var iv = loadInitial();
+  $('initial-cash').value = iv.cash ? String(iv.cash) : '';
+  $('initial-book').value = iv.book ? String(iv.book) : '';
   $('pw-old').value = ''; $('pw-new').value = ''; $('pw-new2').value = '';
   setErr('pw-old-err', ''); setErr('pw-new-err', ''); setErr('pw-new2-err', '');
+  $('btn-adduser-settings').style.display = (users.length < 2) ? 'block' : 'none';
+  refreshSafetyStatus();
+  refreshSoundToggle();
   openModal('modal-settings');
 });
 ['pw-old', 'pw-new', 'pw-new2'].forEach(function (id) {
   $(id).addEventListener('input', function () { this.value = this.value.replace(/\D/g, '').slice(0, 6); });
 });
-['setup-pw1', 'setup-pw2'].forEach(function (id) {
+['setup-pw1', 'adduser-pw'].forEach(function (id) {
   $(id).addEventListener('input', function () { this.value = this.value.replace(/\D/g, '').slice(0, 6); });
 });
 $('btn-change-pw').addEventListener('click', function () {
@@ -1348,16 +1856,22 @@ $('btn-change-pw').addEventListener('click', function () {
     if (!good) { setErr('pw-old-err', '当前密码不正确'); return; }
     var salt = makeSalt();
     hashBoth(salt, nw).then(function (h) {
+      var oldSalt = me.salt, old256 = me.hash256, oldFb = me.hashFallback;
       me.salt = salt; me.hash256 = h.hash256; me.hashFallback = h.hashFallback;
-      saveUsers(users);
+      if (!saveUsers(users)) {
+        me.salt = oldSalt; me.hash256 = old256; me.hashFallback = oldFb;
+        toast('保存失败，密码未修改，请重试', true); return;
+      }
+      autoBackup();
       $('pw-old').value = ''; $('pw-new').value = ''; $('pw-new2').value = '';
+      sfxSuccess();
       toast('密码已修改');
     });
   });
 });
 $('btn-export').addEventListener('click', function () {
   try {
-    var data = { app: 'finance-audit', version: 1, exportedAt: new Date().toISOString(), users: users, records: records, notes: notes, carry: carry };
+    var data = { app: 'finance-audit', version: 1, exportedAt: new Date().toISOString(), users: users, records: records, notes: notes, carry: carry, initial: initial };
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     var a = document.createElement('a');
     var d = new Date();
@@ -1381,7 +1895,7 @@ $('import-file').addEventListener('change', function () {
   rd.onload = function () {
     var data;
     try { data = JSON.parse(rd.result); } catch (e) { toast('导入失败：文件不是有效的 JSON', true); return; }
-    if (!data || data.app !== 'finance-audit' || !Array.isArray(data.users) || data.users.length !== 2 ||
+    if (!data || data.app !== 'finance-audit' || !Array.isArray(data.users) || data.users.length < 1 || data.users.length > 2 ||
         !Array.isArray(data.records)) {
       toast('导入失败：备份文件格式不正确', true);
       return;
@@ -1390,6 +1904,10 @@ $('import-file').addEventListener('change', function () {
       return !u || !NAME_RE.test(u.name) || !u.salt || (!u.hash256 && !u.hashFallback);
     });
     if (badUser) { toast('导入失败：备份中的用户信息不正确', true); return; }
+    var dupUser = data.users.some(function (u, i) {
+      return data.users.findIndex(function (v) { return v.name === u.name; }) !== i;
+    });
+    if (dupUser) { toast('导入失败：备份中有重复的用户名', true); return; }
     var badRec = data.records.some(function (r) {
       return !r || (r.type !== 'income' && r.type !== 'expense') || !r.date ||
         typeof r.amount !== 'number' || !(r.amount > 0) ||
@@ -1402,7 +1920,15 @@ $('import-file').addEventListener('change', function () {
         typeof n.createdAt !== 'string' || !(n.readAt === null || typeof n.readAt === 'string');
     }));
     if (badNote) { toast('导入失败：备份中的通知不正确', true); return; }
-    askConfirm('导入备份', '导入将覆盖当前全部用户、记录和通知，是否继续？', '确定导入', function () {
+    var badInitial = data.initial !== undefined && (!data.initial ||
+      typeof data.initial.cash !== 'number' || !isFinite(data.initial.cash) ||
+      typeof data.initial.book !== 'number' || !isFinite(data.initial.book));
+    if (badInitial) { toast('导入失败：备份中的初始余额不正确', true); return; }
+    var badCarry = data.carry !== undefined && !isMoneyPair(data.carry);
+    if (badCarry) { toast('导入失败：备份中的结转余额不正确', true); return; }
+    askConfirm('导入备份', '当前 ' + users.length + ' 位用户、' + records.length + ' 条记录；导入文件 ' +
+      data.users.length + ' 位用户、' + data.records.length + ' 条记录。导入将覆盖当前全部数据，覆盖前当前状态会先存入自动备份。是否继续？', '确定导入', function () {
+      autoBackup();
       users = data.users;
       records = data.records;
       records.forEach(function (r) { if (r.method !== 'book') r.method = 'cash'; });
@@ -1410,12 +1936,15 @@ $('import-file').addEventListener('change', function () {
       carry = (data.carry && typeof data.carry.cash === 'number' && typeof data.carry.book === 'number')
         ? { cash: Math.round(data.carry.cash * 100) / 100, book: Math.round(data.carry.book * 100) / 100 }
         : { cash: 0, book: 0 };
-      saveUsers(users);
-      saveRecords(records);
-      saveNotes(notes);
-      saveCarry(carry);
+      initial = (data.initial && typeof data.initial.cash === 'number' && typeof data.initial.book === 'number')
+        ? { cash: Math.round(data.initial.cash * 100) / 100, book: Math.round(data.initial.book * 100) / 100 }
+        : { cash: 0, book: 0 };
+      var ok = saveUsers(users) && saveRecords(records) && saveNotes(notes) && saveCarry(carry) && saveInitial(initial);
+      if (!ok) { toast('导入后保存失败，请重试导入', true); return; }
+      autoBackup();
       closeModal('modal-settings');
       me = null;
+      sfxSuccess();
       toast('备份已导入，请重新登录');
       renderLogin();
     });
@@ -1424,16 +1953,24 @@ $('import-file').addEventListener('change', function () {
   rd.readAsText(f);
 });
 $('btn-wipe').addEventListener('click', function () {
-  askConfirm('清除全部数据', '清除后所有用户、记录、通知和结转余额都会被删除，并回到首次设置屏。确定清除吗？', '确定清除', function () {
+  askConfirm('清除全部数据', '清除后所有用户、记录、通知、初始余额和结转余额都会被删除，并回到首次设置屏。确定清除吗？', '确定清除', function () {
     localStorage.removeItem(LS_USERS);
     localStorage.removeItem(LS_RECORDS);
     localStorage.removeItem(LS_NOTES);
     localStorage.removeItem(LS_CARRY);
+    localStorage.removeItem(LS_INITIAL);
+    localStorage.removeItem(LS_RETENTION);
+    localStorage.removeItem(LS_AUTO1);
+    localStorage.removeItem(LS_AUTO2);
+    localStorage.removeItem(LS_CLEANLOG);
+    localStorage.removeItem(LS_SOUND);
     users = null;
     records = [];
     notes = [];
     carry = { cash: 0, book: 0 };
+    initial = { cash: 0, book: 0 };
     me = null;
+    soundOn = true;
     closeModal('modal-settings');
     showView('view-setup');
     toast('数据已清除');
@@ -1445,18 +1982,44 @@ $('btn-logout').addEventListener('click', function () {
   toast('已退出登录');
 });
 
-/* 保留月数改动：保存后立即再清理一次 */
-$('retention-select').addEventListener('change', function () {
+/* 保留月数滑杆：拖动时实时显示，松手时保存并立即再清理一次 */
+$('retention-range').addEventListener('input', function () {
+  $('retention-val').textContent = this.value + ' 个月';
+});
+$('retention-range').addEventListener('change', function () {
   var m = parseInt(this.value, 10);
   if (isNaN(m) || m < 1 || m > 12) {
     this.value = String(loadRetention());
+    $('retention-val').textContent = this.value + ' 个月';
     toast('保留月数只能在 1–12 个月之间', true);
     return;
   }
-  saveRetention(m);
+  if (!saveRetention(m)) {
+    this.value = String(loadRetention());
+    $('retention-val').textContent = this.value + ' 个月';
+    toast('保存失败，保留期限未修改', true);
+    return;
+  }
   var cleaned = runRetentionCleanup(true);
+  autoBackup();
   if (cleaned === 0) toast('保留期限已改为 ' + m + ' 个月');
   if (me) renderMonth();
+});
+
+/* 初始余额：随时可改，保存后累计结余立即重算 */
+$('btn-save-initial').addEventListener('click', function () {
+  function num(id) {
+    var v = parseFloat($(id).value);
+    if (isNaN(v) || !isFinite(v)) return 0;
+    return Math.round(v * 100) / 100;
+  }
+  var nextInitial = { cash: num('initial-cash'), book: num('initial-book') };
+  if (!saveInitial(nextInitial)) { toast('保存失败，初始余额未保存', true); return; }
+  initial = nextInitial;
+  autoBackup();
+  if (me) renderMonth();
+  sfxSuccess();
+  toast('初始余额已保存');
 });
 
 /* ================= 通用关闭与确认框 ================= */
@@ -1551,12 +2114,228 @@ $('btn-help-settings').addEventListener('click', function () {
 });
 $('btn-invite-copy').addEventListener('click', function () { copyText(window.location.href); });
 
-/* ================= 启动：先按保留期限清理一次过期支出 ================= */
-runRetentionCleanup(true);
-if (users && users.length === 2) {
-  renderLogin();
+/* ================= 数据安全：自动备份恢复与清理记录 ================= */
+function refreshSafetyStatus() {
+  var el = $('safety-status');
+  if (!el) return;
+  var b = readAuto(LS_AUTO1);
+  if (b) el.textContent = '自动备份：' + fmtDateTime(b.savedAt) + ' · ' + b.records.length + ' 条记录';
+  else el.textContent = '自动备份：无';
+}
+function refreshSoundToggle() {
+  var b = $('btn-sound-toggle');
+  if (b) b.textContent = soundOn ? '音效：开' : '音效：关';
+}
+$('btn-sound-toggle').addEventListener('click', function () {
+  soundOn = !soundOn;
+  saveSoundSetting();
+  autoBackup();
+  refreshSoundToggle();
+  if (soundOn) sfxSuccess();
+  toast(soundOn ? '音效已开启' : '音效已关闭');
+});
+$('btn-restore-auto').addEventListener('click', function () {
+  var target = readAuto(LS_AUTO1);
+  if (!target) { toast('没有可用的自动备份', true); return; }
+  askConfirm('恢复上次自动备份',
+    '恢复到 ' + fmtDateTime(target.savedAt) + ' 的备份（' + target.records.length + ' 条记录）。恢复前当前状态会先存为新的自动备份，恢复后仍可再恢复一次以反悔。确定恢复吗？',
+    '确定恢复', function () {
+      autoBackup();
+      users = target.users; records = normalizeRecords(target.records); notes = target.notes;
+      carry = { cash: target.carry.cash, book: target.carry.book };
+      initial = { cash: target.initial.cash, book: target.initial.book };
+      soundOn = target.sound !== false;
+      saveUsers(users); saveRecords(records); saveNotes(notes); saveCarry(carry); saveInitial(initial);
+      saveRetention(target.retention); saveSoundSetting();
+      closeModal('modal-settings');
+      me = null;
+      toast('已从自动备份恢复，请重新登录');
+      renderLogin();
+    });
+});
+$('btn-clean-log').addEventListener('click', function () {
+  var log = loadCleanLog();
+  var body = $('cleanlog-body');
+  if (!log.length) { body.innerHTML = ''; body.appendChild(emptyBlock('暂无清理记录')); }
+  else {
+    body.innerHTML = log.map(function (e) {
+      return '<div class="card" style="margin-bottom:10px;"><div style="font-weight:700;">' + fmtDateTime(e.at) + '</div>' +
+        '<div style="font-size:13px; color:var(--text-sub); line-height:1.7; margin-top:4px;">' +
+        '删收入 ' + e.delInc + ' 条（' + fmtMoney(e.delIncAmt) + '）· 删支出 ' + e.delExp + ' 条（' + fmtMoney(e.delExpAmt) + '）<br>' +
+        '结转 ' + fmtMoney(e.carryBefore.cash) + ' / ' + fmtMoney(e.carryBefore.book) + ' → ' +
+        fmtMoney(e.carryAfter.cash) + ' / ' + fmtMoney(e.carryAfter.book) + '（现金 / 账面）</div></div>';
+    }).join('');
+  }
+  closeModal('modal-settings');
+  openModal('modal-cleanlog');
+});
+
+/* ================= 导出对账单：打印 / PDF / CSV ================= */
+var stmtPeriod = 'month';
+function setStmtPeriod(p) {
+  stmtPeriod = p;
+  ['month', 'year', 'all'].forEach(function (k) {
+    $('seg-period-' + k).className = (k === p) ? 'on' : '';
+  });
+  refreshStmtSummary();
+}
+function stmtRange() {
+  if (stmtPeriod === 'month') return { label: viewYear + '年' + viewMonth + '月', list: monthRecords(viewYear, viewMonth) };
+  if (stmtPeriod === 'year') return { label: viewYear + '年', list: yearRecords(viewYear) };
+  return { label: '全部', list: records.slice() };
+}
+function stmtSums(list) {
+  return {
+    incCash: sumPostedMethod(list, 'income', 'cash'), incBook: sumPostedMethod(list, 'income', 'book'),
+    expCash: sumPostedMethod(list, 'expense', 'cash'), expBook: sumPostedMethod(list, 'expense', 'book')
+  };
+}
+function refreshStmtSummary() {
+  var r = stmtRange(), s = stmtSums(r.list);
+  $('stmt-summary').textContent = r.label + '：已入账收入 ' + fmtMoney(s.incCash + s.incBook) +
+    ' · 已入账支出 ' + fmtMoney(s.expCash + s.expBook);
+}
+$('btn-statement').addEventListener('click', function () {
+  closeModal('modal-settings');
+  setStmtPeriod('month');
+  openModal('modal-statement');
+});
+['month', 'year', 'all'].forEach(function (k) {
+  $('seg-period-' + k).addEventListener('click', function () { setStmtPeriod(k); });
+});
+function stmtRows(list, type, status) {
+  return list.filter(function (r) { return r.type === type && r.status === status; })
+    .sort(function (a, b) { if (a.date !== b.date) return a.date < b.date ? 1 : -1; return a.createdAt < b.createdAt ? 1 : -1; });
+}
+function stmtTableRow(r) {
+  return '<tr><td>' + esc(r.date) + '</td><td>' + esc(r.category) + '</td><td>' + methodLabel(r) + '</td>' +
+    '<td class="num">' + fmtMoney(r.amount) + '</td><td>' + esc(r.by) + '</td><td>' + esc(r.note || '') + '</td></tr>';
+}
+function stmtSection(title, rows, foot) {
+  var h = '<h2>' + title + '</h2><table><tr><th>日期</th><th>分类</th><th>方式</th><th class="num">金额</th><th>提交人</th><th>备注</th></tr>';
+  h += rows.length ? rows.map(stmtTableRow).join('') : '<tr><td colspan="6">无</td></tr>';
+  h += '</table>';
+  if (foot) h += '<div class="foot">' + foot + '</div>';
+  return h;
+}
+function buildStatementHTML() {
+  var r = stmtRange(), s = stmtSums(r.list);
+  var perWord = (stmtPeriod === 'all') ? '全部' : '本期';
+  var totIncCash = sumPostedMethod(records, 'income', 'cash'), totIncBook = sumPostedMethod(records, 'income', 'book');
+  var totExpCash = sumPostedMethod(records, 'expense', 'cash'), totExpBook = sumPostedMethod(records, 'expense', 'book');
+  var balCash = initial.cash + carry.cash + totIncCash - totExpCash;
+  var balBook = initial.book + carry.book + totIncBook - totExpBook;
+  var d = new Date();
+  var html = '<div class="stmt"><h1>财务审计对账单</h1>' +
+    '<div class="meta">期间：' + r.label + '　制表日期：' + d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日</div>' +
+    '<h2>余额</h2><table>' +
+    '<tr><th>项目</th><th class="num">现金</th><th class="num">账面</th><th class="num">总计</th></tr>' +
+    '<tr><td>初始余额</td><td class="num">' + fmtMoney(initial.cash) + '</td><td class="num">' + fmtMoney(initial.book) + '</td><td class="num">' + fmtMoney(initial.cash + initial.book) + '</td></tr>' +
+    '<tr><td>结转余额</td><td class="num">' + fmtMoney(carry.cash) + '</td><td class="num">' + fmtMoney(carry.book) + '</td><td class="num">' + fmtMoney(carry.cash + carry.book) + '</td></tr>' +
+    '<tr class="tot"><td>期末结余</td><td class="num">' + fmtMoney(balCash) + '</td><td class="num">' + fmtMoney(balBook) + '</td><td class="num">' + fmtMoney(balCash + balBook) + '</td></tr></table>' +
+    '<div class="foot">期末结余 = 初始余额 + 结转余额 + 全部已入账净额；已清理的旧明细不在明细中，但已计入结转余额。</div>';
+  html += stmtSection('收入明细', stmtRows(r.list, 'income', 'posted'), null);
+  html += stmtSection('已入账支出明细', stmtRows(r.list, 'expense', 'posted'), null);
+  html += stmtSection('待确认支出', stmtRows(r.list, 'expense', 'pending'), '待确认支出不计入总额。');
+  var rej = stmtRows(r.list, 'expense', 'rejected');
+  if (rej.length) html += stmtSection('已驳回支出', rej, '已驳回支出不计入总额。');
+  html += '<h2>合计</h2><table>' +
+    '<tr><th>项目</th><th class="num">现金</th><th class="num">账面</th><th class="num">总计</th></tr>' +
+    '<tr><td>' + perWord + '已入账收入</td><td class="num">' + fmtMoney(s.incCash) + '</td><td class="num">' + fmtMoney(s.incBook) + '</td><td class="num">' + fmtMoney(s.incCash + s.incBook) + '</td></tr>' +
+    '<tr><td>' + perWord + '已入账支出</td><td class="num">' + fmtMoney(s.expCash) + '</td><td class="num">' + fmtMoney(s.expBook) + '</td><td class="num">' + fmtMoney(s.expCash + s.expBook) + '</td></tr>' +
+    '<tr class="tot"><td>' + perWord + '已入账净额</td><td class="num">' + fmtMoney(s.incCash - s.expCash) + '</td><td class="num">' + fmtMoney(s.incBook - s.expBook) + '</td><td class="num">' + fmtMoney((s.incCash + s.incBook) - (s.expCash + s.expBook)) + '</td></tr></table></div>';
+  return html;
+}
+$('btn-statement-print').addEventListener('click', function () {
+  $('print-area').innerHTML = buildStatementHTML();
+  closeModal('modal-statement');
+  setTimeout(function () { window.print(); }, 60);
+});
+function csvEsc(v) {
+  var s = String(v == null ? '' : v);
+  return '"' + s.replace(/"/g, '""') + '"';
+}
+function fmtCSVTime(iso) {
+  var dt = new Date(iso);
+  if (isNaN(dt.getTime())) return '';
+  return dt.getFullYear() + '-' + pad(dt.getMonth() + 1) + '-' + pad(dt.getDate()) + ' ' + pad(dt.getHours()) + ':' + pad(dt.getMinutes());
+}
+$('btn-statement-csv').addEventListener('click', function () {
+  var r = stmtRange();
+  var rows = r.list.slice().sort(function (a, b) { if (a.date !== b.date) return a.date < b.date ? 1 : -1; return a.createdAt < b.createdAt ? 1 : -1; });
+  var head = ['日期', '类型', '分类', '方式', '金额', '备注', '提交人', '状态', '确认人', '确认时间'];
+  var lines = [head.map(csvEsc).join(',')];
+  rows.forEach(function (rec) {
+    lines.push([rec.date, rec.type === 'income' ? '收入' : '支出', rec.category, methodLabel(rec),
+      rec.amount.toFixed(2), rec.note || '', rec.by,
+      rec.status === 'posted' ? '已入账' : (rec.status === 'pending' ? '待确认' : '已驳回'),
+      rec.confirmedBy || '', rec.confirmedAt ? fmtCSVTime(rec.confirmedAt) : ''].map(csvEsc).join(','));
+  });
+  var blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '财务审计-对账单-' + r.label + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  toast('CSV 已导出');
+});
+
+/* ================= 数据恢复屏 ================= */
+function renderRecovery() {
+  var d = $('recovery-detail');
+  var lines = [];
+  lines.push(recoveryInfo || '本地数据无法读取。');
+  try {
+    var rc = JSON.parse(readRawPart(LS_RECORDS) || 'null');
+    if (Array.isArray(rc)) lines.push('收支记录残留 ' + rc.length + ' 条（可导出留存）。');
+  } catch (e) {}
+  d.innerHTML = lines.map(function (t) { return '<div>' + esc(t) + '</div>'; }).join('');
+  showView('view-recovery');
+}
+$('btn-recovery-export').addEventListener('click', function () {
+  try {
+    var out = {};
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf('finance-audit-v1') === 0) out[k] = localStorage.getItem(k);
+    }
+    var blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'finance-audit-residual.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    toast('残留数据已导出');
+  } catch (e) { toast('导出失败', true); }
+});
+$('btn-recovery-reset').addEventListener('click', function () {
+  askConfirm('清除并重新开始', '将删除全部本地数据（含自动备份与清理记录），回到首次设置屏。确定吗？', '确定清除', function () {
+    [LS_USERS, LS_RECORDS, LS_NOTES, LS_CARRY, LS_INITIAL, LS_RETENTION, LS_AUTO1, LS_AUTO2, LS_CLEANLOG, LS_SOUND].forEach(function (k) {
+      try { localStorage.removeItem(k); } catch (e) {}
+    });
+    users = null; records = []; notes = []; carry = { cash: 0, book: 0 }; initial = { cash: 0, book: 0 }; me = null; soundOn = true;
+    showView('view-setup');
+    toast('已清除，请重新设置');
+  });
+});
+
+/* ================= 点击音效：全部按钮点按极轻 click ================= */
+document.addEventListener('click', function (e) {
+  var t = e.target && e.target.closest ? e.target.closest('button') : null;
+  if (t) sfxClick();
+});
+
+/* ================= 启动：损坏先恢复屏，否则清理一次再进登录/设置 ================= */
+if (dataBroken) {
+  renderRecovery();
 } else {
-  showView('view-setup');
+  runRetentionCleanup(true);
+  if (users && users.length >= 1) {
+    renderLogin();
+    if (recoveredFromBackup) toast('已从自动备份恢复数据，请核对记录');
+  } else {
+    showView('view-setup');
+  }
 }
 })();
 </script>
