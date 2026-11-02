@@ -82,6 +82,16 @@
   }
   #btn-exit { left: 12px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: bold; }
   #btn-help { right: 12px; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; font-weight: bold; padding: 0; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+  #btn-copy { right: 48px; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; font-weight: bold; padding: 0; }
+  /* ---- Borderless entry toggles: tap to expand the form in place ---- */
+  .st-toggle {
+    display: flex; justify-content: space-between; align-items: center; width: 100%;
+    background: none; border: none; padding: 2px 0; cursor: pointer;
+    font-family: inherit; font-size: 17px; font-weight: bold; color: #2a2410; text-align: left;
+  }
+  .st-toggle .chev { font-size: 14px; }
+  .st-body { display: none; margin-top: 10px; }
+  .st-body.open { display: block; }
   /* ---- Small per-record Delete button ---- */
   .ldel {
     font-family: inherit; font-size: 12px; font-weight: normal; color: #2a2410;
@@ -136,6 +146,7 @@
   <div class="tape left"></div>
   <div class="tape right"></div>
   <button type="button" class="st-corner" id="btn-exit" aria-label="Exit">Exit</button>
+  <button type="button" class="st-corner" id="btn-copy" aria-label="Copy ledger">c</button>
   <button type="button" class="st-corner" id="btn-help" aria-label="About this sticker">?</button>
   <div class="sticker-scroll">
     <div class="st-month" id="st-month"></div>
@@ -152,26 +163,29 @@
     </div>
 
     <div class="st-section">
-      <h3>Add income</h3>
-      <div class="srow">
-        <input type="text" id="add-amount" inputmode="decimal" value="100" aria-label="Amount to add">
-        <button type="button" class="sbtn" id="btn-add">Add</button>
+      <button type="button" class="st-toggle" id="btn-toggle-income">Add income <span class="chev" id="chev-income">▾</span></button>
+      <div class="st-body" id="body-income">
+        <div class="srow">
+          <input type="text" id="add-amount" inputmode="decimal" value="100" aria-label="Amount to add">
+          <button type="button" class="sbtn" id="btn-add">Add</button>
+        </div>
+        <input type="text" id="inc-memo" maxlength="60" placeholder="Memo" aria-label="Income memo">
       </div>
-      <input type="text" id="inc-memo" maxlength="60" placeholder="Memo" aria-label="Income memo">
     </div>
 
     <div class="st-section">
-      <h3>New expense</h3>
-      <input type="text" id="exp-amount" inputmode="decimal" placeholder="Amount" aria-label="Expense amount">
-      <input type="text" id="exp-memo" maxlength="60" placeholder="Memo" aria-label="Expense memo">
-      <div style="margin-top:10px;"><button type="button" class="sbtn" id="btn-expense">Submit</button></div>
+      <button type="button" class="st-toggle" id="btn-toggle-expense">New expense <span class="chev" id="chev-expense">▾</span></button>
+      <div class="st-body" id="body-expense">
+        <input type="text" id="exp-amount" inputmode="decimal" placeholder="Amount" aria-label="Expense amount">
+        <input type="text" id="exp-memo" maxlength="60" placeholder="Memo" aria-label="Expense memo">
+        <div style="margin-top:10px;"><button type="button" class="sbtn" id="btn-expense">Submit</button></div>
+      </div>
     </div>
 
     <div class="st-section">
       <h3>Ledger</h3>
-      <div style="margin-bottom:10px;"><button type="button" class="sbtn" id="btn-copy">Copy ledger</button></div>
       <div id="ledger-list"></div>
-      <div class="small">Records older than 3 months are carried into the balance.</div>
+      <div class="small">Records older than 36 days are deleted automatically.</div>
     </div>
   </div>
 </div>
@@ -189,15 +203,14 @@
 <div id="help-overlay">
   <div class="dlg" role="dialog" aria-label="About this sticker">
     <h2>About this sticker</h2>
-    <p>This sticker shows the current month and the latest balance.</p>
-    <p>Opening balance: enter it the first time you use the app, then confirm. After that it is fixed.</p>
-    <p>Expense: type the amount by hand, confirm, and the balance goes down.</p>
-    <p>Income: add it by hand each month and confirm. The amount box starts at CA$100.</p>
-    <p>The balance can go below zero.</p>
-    <p>Records are kept for 3 months.</p>
-    <p>Copy ledger copies the books as text, so you can paste them into Google Keep by hand.</p>
-    <p>Long-press ? to adjust the balance (for corrections).</p>
-    <p>Everything stays in this phone's browser storage.</p>
+    <p>Opening balance: fill it in on first use, then confirm.</p>
+    <p>Add income / New expense: enter the amount, then confirm.</p>
+    <p>Balance can go negative.</p>
+    <p>Long-press ? to adjust the balance.</p>
+    <p>c copies the ledger. Paste it into Google Keep.</p>
+    <p>Exit leaves a blank screen. Reopen to return.</p>
+    <p>Each record can be deleted.</p>
+    <p>Everything stays on this phone.</p>
     <div class="btns">
       <button type="button" class="dbtn" id="btn-help-close">Close</button>
     </div>
@@ -271,23 +284,12 @@ function toast(msg, isErr) {
 
 /* ---- Storage: localStorage only ---- */
 var LS_RECORDS = 'finance-personal-v1:records';
-var LS_CARRY = 'finance-personal-v1:carry';
 var LS_OPENING = 'finance-personal-v1:opening';
-var LS_RETENTION = 'finance-personal-v1:retention';
+var LS_CARRY = 'finance-personal-v1:carry';
 var LS_AUTO1 = 'finance-personal-v1:auto-backup';
 var LS_AUTO2 = 'finance-personal-v1:auto-backup-prev';
-var DEFAULT_RETENTION = 3;
-function loadRetention() {
-  var v = parseInt(readRawPart(LS_RETENTION) || '', 10);
-  return (isNaN(v) || v < 1 || v > 12) ? DEFAULT_RETENTION : v;
-}
 function normalizeMoney(v) {
   return (typeof v === 'number' && isFinite(v)) ? Math.round(v * 100) / 100 : 0;
-}
-function loadCarry() {
-  var raw = readRawPart(LS_CARRY);
-  if (raw === null) return 0;
-  try { return normalizeMoney(JSON.parse(raw)); } catch (e) { return 0; }
 }
 function writeVerified(key, json) {
   var ok = false;
@@ -303,8 +305,8 @@ function saveVerified(key, val) {
   return writeVerified(key, json);
 }
 function saveRecords(r) { return saveVerified(LS_RECORDS, r); }
-function saveCarry(c) { return saveVerified(LS_CARRY, c); }
 function saveOpening(v) { return saveVerified(LS_OPENING, v); }
+function saveCarry(v) { return saveVerified(LS_CARRY, v); }
 function isValidRecord(r) {
   if (!r || (r.type !== 'income' && r.type !== 'expense' && r.type !== 'adjustment')) return false;
   if (typeof r.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(r.date)) return false;
@@ -324,12 +326,11 @@ function normalizeRecords(list) {
 }
 function isValidSnapshot(s) {
   return !!s && s.app === 'finance-personal' && isValidRecords(s.records) &&
-    isMoneyValue(s.carry) && isMoneyValue(s.opening) &&
-    typeof s.retention === 'number' && s.retention >= 1 && s.retention <= 12;
+    isMoneyValue(s.opening) && (s.carry === undefined || isMoneyValue(s.carry));
 }
 function makeSnapshot() {
   return { app: 'finance-personal', version: 1, savedAt: new Date().toISOString(),
-    records: records, carry: carry, opening: opening, retention: loadRetention() };
+    records: records, opening: opening, carry: carry };
 }
 function autoBackup() {
   try {
@@ -346,8 +347,8 @@ function readAuto(key) {
   try {
     var s = JSON.parse(raw);
     s.records = normalizeRecords(s.records);
-    s.carry = normalizeMoney(s.carry);
     s.opening = normalizeMoney(s.opening);
+    s.carry = isMoneyValue(s.carry) ? normalizeMoney(s.carry) : 0;
     return isValidSnapshot(s) ? s : null;
   } catch (e) { return null; }
 }
@@ -359,103 +360,47 @@ function parsePart(raw, fallback) {
   try { return { missing: false, corrupt: false, value: JSON.parse(raw) }; }
   catch (e) { return { missing: false, corrupt: true, value: fallback }; }
 }
-function cutoffDate(months) {
-  var d = new Date();
-  var y = d.getFullYear(), m = d.getMonth() + 1 - months;
-  while (m < 1) { m += 12; y -= 1; }
-  var last = new Date(y, m, 0).getDate();
-  var day = Math.min(d.getDate(), last);
-  return y + '-' + pad(m) + '-' + pad(day);
-}
-/* Cleanup: drop records before the cutoff, except the latest income and
-   expense, which are never deleted. Their net joins the carried-forward
-   balance. Silent on success. */
-function runRetentionCleanup() {
-  var months = loadRetention();
-  var cut = cutoffDate(months);
-  var latestInc = null, latestExp = null;
-  records.forEach(function (r) {
-    if (r.type !== 'income' && r.type !== 'expense') return;
-    var cur = r.type === 'income' ? latestInc : latestExp;
-    if (!cur || r.date > cur.date || (r.date === cur.date && r.createdAt > cur.createdAt)) {
-      if (r.type === 'income') latestInc = r; else latestExp = r;
-    }
-  });
-  function keep(r) {
-    if (r.date >= cut) return true;
-    if (latestInc && r.id === latestInc.id) return true;
-    if (latestExp && r.id === latestExp.id) return true;
-    return false;
-  }
-  var deleted = records.filter(function (r) { return !keep(r); });
-  if (!deleted.length) return 0;
-  var c = loadCarry();
-  var carryBefore = c;
-  var di = deleted.filter(function (r) { return r.type === 'income'; })
-    .reduce(function (s, r) { return s + r.amount; }, 0);
-  var de = deleted.filter(function (r) { return r.type === 'expense'; })
-    .reduce(function (s, r) { return s + r.amount; }, 0);
-  var da = deleted.filter(function (r) { return r.type === 'adjustment'; })
-    .reduce(function (s, r) { return s + r.amount; }, 0);
-  c = normalizeMoney(c + di - de + da);
-  autoBackup();
-  var oldRecords = records;
-  var nextRecords = records.filter(keep);
-  if (!saveRecords(nextRecords)) { toast('Cleanup save failed. Cleanup was not performed.', true); return 0; }
-  records = nextRecords;
-  carry = c;
-  if (!saveCarry(c)) {
-    if (saveRecords(oldRecords)) {
-      records = oldRecords; carry = carryBefore;
-      toast('Cleanup save failed and was rolled back. Please try again.', true);
-    } else {
-      toast('Cleanup save failed and the rollback also failed. Please check your balance.', true);
-    }
-    return 0;
-  }
-  return deleted.length;
-}
-
 /* ---- State: validated at startup, restored from backup if damaged ---- */
 var bootRecordsP = parsePart(readRawPart(LS_RECORDS), []);
-var bootCarryP = parsePart(readRawPart(LS_CARRY), null);
 var bootOpeningP = parsePart(readRawPart(LS_OPENING), null);
+var bootCarryP = parsePart(readRawPart(LS_CARRY), null);
 var records = bootRecordsP.corrupt ? [] : normalizeRecords(bootRecordsP.value);
-var carry = normalizeMoney(bootCarryP.value);
 var opening = 0;
 var openingSet = false;
 if (!bootOpeningP.corrupt && typeof bootOpeningP.value === 'number' && isFinite(bootOpeningP.value)) {
   opening = normalizeMoney(bootOpeningP.value);
   openingSet = true;
 }
+var carry = 0;
+if (!bootCarryP.corrupt && typeof bootCarryP.value === 'number' && isFinite(bootCarryP.value)) {
+  carry = normalizeMoney(bootCarryP.value);
+}
 var dataBroken = false;
 var recoveredFromBackup = false;
 (function bootCheck() {
   var recordsOk = !bootRecordsP.corrupt && Array.isArray(bootRecordsP.value) && isValidRecords(records);
-  var secondaryBad = bootCarryP.corrupt || !isMoneyValue(carry);
-  if (recordsOk && !secondaryBad) return;
+  if (recordsOk) return;
   var snap = readAuto(LS_AUTO1) || readAuto(LS_AUTO2);
   if (snap) {
     records = normalizeRecords(snap.records);
-    carry = normalizeMoney(snap.carry);
     opening = normalizeMoney(snap.opening);
     openingSet = true;
-    saveRecords(records); saveCarry(carry); saveOpening(opening);
-    try { localStorage.setItem(LS_RETENTION, String(snap.retention)); } catch (e) {}
+    carry = normalizeMoney(snap.carry);
+    saveRecords(records); saveOpening(opening); saveCarry(carry);
     recoveredFromBackup = true;
     return;
   }
   if (!recordsOk) {
     dataBroken = true;
     try {
-      [LS_RECORDS, LS_CARRY, LS_OPENING, LS_RETENTION].forEach(function (k) {
+      [LS_RECORDS, LS_OPENING, LS_CARRY].forEach(function (k) {
         localStorage.removeItem(k);
       });
     } catch (e) {}
     records = [];
-    carry = 0;
     opening = 0;
     openingSet = false;
+    carry = 0;
     return;
   }
 })();
@@ -489,7 +434,7 @@ function ledgerModel() {
   var rows = [];
   if (openingSet) rows.push({ kind: 'opening', run: run });
   if (carry !== 0) {
-    run = normalizeMoney(run + carry);
+    run = normalizeMoney(opening + carry);
     rows.push({ kind: 'carry', run: run });
   }
   chrono.forEach(function (r) {
@@ -522,7 +467,7 @@ function render() {
       var crow = document.createElement('div');
       crow.className = 'lrow';
       crow.innerHTML = '<div class="lt">Carried forward</div><div class="la">' +
-        esc((carry > 0 ? '+' : '-') + fmtMoney(Math.abs(carry))) + ' · Balance ' + esc(fmtMoney(row.run)) + '</div>';
+        esc(fmtMoney(carry)) + ' · Balance ' + esc(fmtMoney(row.run)) + '</div>';
       list.appendChild(crow);
       return;
     }
@@ -542,6 +487,41 @@ function render() {
     });
     list.appendChild(el);
   });
+}
+
+/* ---- Retention: at most 36 days, older records auto-delete into carry ---- */
+function cutoff36() {
+  var d = new Date();
+  d.setDate(d.getDate() - 36);
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+function runRetentionCleanup() {
+  var cutoff = cutoff36();
+  var keep = [];
+  var droppedNet = 0;
+  var dropped = 0;
+  records.forEach(function (r) {
+    if (r.date < cutoff) {
+      dropped++;
+      droppedNet = normalizeMoney(droppedNet + (r.type === 'expense' ? -r.amount : r.amount));
+    } else {
+      keep.push(r);
+    }
+  });
+  if (!dropped) return false;
+  var oldRecords = records;
+  var oldCarry = carry;
+  records = keep;
+  carry = normalizeMoney(carry + droppedNet);
+  if (!saveRecords(records) || !saveCarry(carry)) {
+    saveRecords(oldRecords);
+    saveCarry(oldCarry);
+    records = oldRecords;
+    carry = oldCarry;
+    return false;
+  }
+  autoBackup();
+  return true;
 }
 
 /* ---- Confirm every entry before it is recorded ---- */
@@ -591,6 +571,22 @@ $('btn-expense').addEventListener('click', function () {
   openConfirm('Add expense of <b>' + esc(fmtMoney(amount)) + '</b>' +
     (draft.memo ? '<br>Memo: ' + esc(draft.memo) : ''));
 });
+/* ---- Entry toggles: borderless buttons expand the form in place, one at a time ---- */
+function syncToggleChevrons() {
+  $('chev-income').textContent = $('body-income').classList.contains('open') ? '▴' : '▾';
+  $('chev-expense').textContent = $('body-expense').classList.contains('open') ? '▴' : '▾';
+}
+function toggleEntry(which) {
+  var inc = $('body-income'), exp = $('body-expense');
+  var target = which === 'income' ? inc : exp;
+  var willOpen = !target.classList.contains('open');
+  inc.classList.remove('open');
+  exp.classList.remove('open');
+  if (willOpen) target.classList.add('open');
+  syncToggleChevrons();
+}
+$('btn-toggle-income').addEventListener('click', function () { toggleEntry('income'); });
+$('btn-toggle-expense').addEventListener('click', function () { toggleEntry('expense'); });
 $('btn-cancel').addEventListener('click', closeConfirm);
 $('confirm-overlay').addEventListener('click', function (e) {
   if (e.target === $('confirm-overlay')) closeConfirm();
@@ -669,6 +665,7 @@ $('btn-confirm').addEventListener('click', function () {
     failSave(); return;
   }
   autoBackup();
+  runRetentionCleanup();
   if (draft.type === 'income') { $('add-amount').value = '100'; $('inc-memo').value = ''; }
   else { $('exp-amount').value = ''; $('exp-memo').value = ''; }
   var doneType = draft.type;
@@ -682,11 +679,10 @@ function buildLedgerText() {
   var lines = [monthTitleNow(), 'Balance: ' + fmtMoney(balanceTotal())];
   var rows = ledgerModel();
   rows.forEach(function (row) {
-    if (row.kind === 'opening') {
+    if (row.kind === 'carry') {
+      lines.push('Carried forward: ' + fmtMoney(carry) + ' · Balance ' + fmtMoney(row.run));
+    } else if (row.kind === 'opening') {
       lines.push('Opening: ' + fmtMoney(opening) + ' · Balance ' + fmtMoney(row.run));
-    } else if (row.kind === 'carry') {
-      lines.push('Carried forward: ' + (carry > 0 ? '+' : '-') + fmtMoney(Math.abs(carry)) +
-        ' · Balance ' + fmtMoney(row.run));
     } else {
       var r = row.rec;
       lines.push(fmtDate(r.date) + ' · ' + typeLabel(r.type) +
@@ -768,17 +764,19 @@ $('btn-adjust-confirm').addEventListener('click', function () {
     toast('Save failed. Please try again.', true); return;
   }
   autoBackup();
+  runRetentionCleanup();
   closeAdjust();
   render();
   toast('Balance adjusted.');
 });
 
-/* ---- Startup: silent retention cleanup, then render ---- */
+/* ---- Startup: clean old records, then render ---- */
+if (bootCarryP.corrupt) saveCarry(carry);
+runRetentionCleanup();
 if (dataBroken) {
   render();
   toast('Previous data could not be read, starting fresh.', true);
 } else {
-  runRetentionCleanup();
   render();
   if (recoveredFromBackup) toast('Restored from auto backup. Please check your balance.');
 }
