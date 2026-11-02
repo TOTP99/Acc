@@ -34,15 +34,14 @@
     position: absolute; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
     padding: 40px 24px 34px; scrollbar-width: thin;
   }
-  /* Tape strips holding the sticker to the desk */
+  /* Tape strip holding the sticker to the desk */
   .tape {
-    position: absolute; top: -13px; width: 92px; height: 28px; z-index: 3;
+    position: absolute; top: -13px; left: 50%; width: 92px; height: 28px; z-index: 3;
+    transform: translateX(-50%) rotate(-3deg);
     background: rgba(255,255,255,.42);
     border-left: 1px dashed rgba(0,0,0,.10); border-right: 1px dashed rgba(0,0,0,.10);
     box-shadow: 0 2px 4px rgba(0,0,0,.14); pointer-events: none;
   }
-  .tape.left { left: 26px; transform: rotate(-4deg); }
-  .tape.right { right: 26px; transform: rotate(3deg); }
   /* Folded-up bottom-right corner */
   .sticker::after {
     content: ""; position: absolute; right: 0; bottom: 0; width: 34px; height: 34px; z-index: 3;
@@ -143,8 +142,7 @@
 <body>
 
 <div class="sticker">
-  <div class="tape left"></div>
-  <div class="tape right"></div>
+  <div class="tape"></div>
   <button type="button" class="st-corner" id="btn-exit" aria-label="Exit">Exit</button>
   <button type="button" class="st-corner" id="btn-copy" aria-label="Copy ledger">c</button>
   <button type="button" class="st-corner" id="btn-help" aria-label="About this sticker">?</button>
