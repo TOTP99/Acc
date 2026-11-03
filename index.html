@@ -234,7 +234,7 @@
     <p>2. Tap c for month and balance.</p>
     <p>3. Exit: blank screen, reopen to return.</p>
     <p>4. Everything stays on this phone. Browsers may clear it after long disuse, so export a backup now and then.</p>
-    <p>5. Limits: CA$500 per amount, 10 records, 20 characters per memo.</p>
+    <p>5. Limits: CA$2,000 per amount, 50 records, 20 characters per memo.</p>
     <div class="btns">
       <button type="button" class="dbtn secondary" id="btn-export">Export backup</button>
       <button type="button" class="dbtn secondary" id="btn-import">Import backup</button>
@@ -319,8 +319,8 @@ var LS_CARRY = 'finance-personal-v1:carry';
 var LS_AUTO1 = 'finance-personal-v1:auto-backup';
 var LS_AUTO2 = 'finance-personal-v1:auto-backup-prev';
 /* Money is calculated in integer cents. */
-var MAX_MONEY = 500; // hard ceiling per balance/entry: CA$500
-var MAX_RECORDS = 10;
+var MAX_MONEY = 2000; // hard ceiling per balance/entry: CA$2,000
+var MAX_RECORDS = 50;
 var MAX_MEMO = 20;
 var storageBlocked = false;
 var crossTabConflict = false;
@@ -659,7 +659,7 @@ $('btn-opening').addEventListener('click', function () {
   if (!canMutate()) return;
   var raw = $('opening-amount').value.trim();
   var amount = raw ? parseAmount(raw) : 0;
-  if (raw && (!isFinite(amount) || toCents(amount) === null)) { toast('Enter a valid amount up to CA$500.', true); return; }
+  if (raw && (!isFinite(amount) || toCents(amount) === null)) { toast('Enter a valid amount up to CA$2,000.', true); return; }
   draft = { type: 'opening', amount: amount };
   openConfirm('Set the opening balance to <b>' + esc(fmtMoney(amount)) + '</b>');
 });
@@ -785,7 +785,7 @@ $('btn-confirm').addEventListener('click', function () {
     return;
   }
   if (dupBlocked([draft.type, draft.amount, todayStr(), draft.memo].join('|'))) return;
-  if (records.length >= MAX_RECORDS) { toast('Record limit reached (10). Export a backup before continuing.', true); return; }
+  if (records.length >= MAX_RECORDS) { toast('Record limit reached (50). Export a backup before continuing.', true); return; }
   var projectedCents = toCents(balanceTotal()) + (draft.type === 'expense' ? -toCents(draft.amount) : toCents(draft.amount));
   if (!Number.isSafeInteger(projectedCents) || Math.abs(projectedCents) > MAX_MONEY * 100) { toast('This entry would exceed the supported balance limit.', true); return; }
   var rec = { id: uid(), type: draft.type, date: todayStr(), amount: draft.amount,
@@ -903,11 +903,11 @@ $('btn-adjust-confirm').addEventListener('click', function () {
   var raw = $('adjust-amount').value.trim();
   if (!raw) { closeAdjust(); toast('No change.'); return; }
   var nw = parseAmount(raw);
-  if (!isFinite(nw) || toCents(nw) === null) { toast('Enter a valid amount up to CA$500.', true); return; }
+  if (!isFinite(nw) || toCents(nw) === null) { toast('Enter a valid amount up to CA$2,000.', true); return; }
   var delta = fromCents(toCents(nw) - toCents(balanceTotal()));
   if (delta === 0) { closeAdjust(); toast('No change.'); return; }
   if (!isFinite(delta) || Math.abs(delta) > MAX_MONEY * 2) { toast('Adjustment exceeds the supported limit.', true); return; }
-  if (records.length >= MAX_RECORDS) { toast('Record limit reached (10). Export a backup before continuing.', true); return; }
+  if (records.length >= MAX_RECORDS) { toast('Record limit reached (50). Export a backup before continuing.', true); return; }
   var rec = { id: uid(), type: 'adjustment', date: todayStr(), amount: delta,
     memo: $('adjust-memo').value.trim() || 'Balance adjustment', createdAt: new Date().toISOString() };
   records.push(rec);
