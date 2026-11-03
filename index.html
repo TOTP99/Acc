@@ -58,7 +58,7 @@
   }
   .st-month { font-size: 22px; font-weight: bold; letter-spacing: .3px; }
   .st-balance-label { font-size: 15px; opacity: .75; margin-top: 8px; }
-  /* Better handling of long balance numbers */
+  /* Long balances wrap instead of overflowing. */
   .st-balance {
     font-size: clamp(22px, 9vw, 38px);
     font-weight: bold;
@@ -318,7 +318,7 @@ var LS_OPENING = 'finance-personal-v1:opening';
 var LS_CARRY = 'finance-personal-v1:carry';
 var LS_AUTO1 = 'finance-personal-v1:auto-backup';
 var LS_AUTO2 = 'finance-personal-v1:auto-backup-prev';
-/* All calculations use integer cents. Stored values remain decimal dollars for v1 compatibility. */
+/* Money is calculated in integer cents. */
 var MAX_MONEY = 500; // hard ceiling per balance/entry: CA$500
 var MAX_RECORDS = 10;
 var MAX_MEMO = 20;
@@ -361,11 +361,12 @@ function isValidRecord(r) {
   if (!r || (r.type !== 'income' && r.type !== 'expense' && r.type !== 'adjustment')) return false;
   if (!validDateString(r.date)) return false;
   var amountLimit = r.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY;
-  if (toCents(r.amount, amountLimit) === null) return false;
+  var cents = toCents(r.amount, amountLimit);
+  if (cents === null) return false;
   if (typeof r.id !== 'string' || !r.id || r.id.length > 128) return false;
   if (r.memo !== undefined && (typeof r.memo !== 'string' || r.memo.length > MAX_MEMO)) return false;
   if (r.createdAt !== undefined && typeof r.createdAt !== 'string') return false;
-  return r.type === 'adjustment' ? toCents(r.amount, amountLimit) !== 0 : toCents(r.amount) > 0;
+  return r.type === 'adjustment' ? cents !== 0 : cents > 0;
 }
 function isValidRecords(v) {
   if (!Array.isArray(v) || v.length > MAX_RECORDS || !v.every(isValidRecord)) return false;
@@ -385,6 +386,11 @@ function normalizeRecords(list) {
       createdAt: (typeof r.createdAt === 'string') ? r.createdAt : '' };
   });
 }
+function normalizeSnapshot(s) {
+  return { app: s.app, version: s.version, savedAt: s.savedAt || '',
+    records: normalizeRecords(s.records), opening: normalizeMoney(s.opening),
+    carry: s.carry === undefined ? 0 : normalizeMoney(s.carry) };
+}
 function ledgerWithinLimit(list, op, ca) {
   var cents = toCents(op) + toCents(ca || 0);
   list.forEach(function (r) { var a = toCents(r.amount, r.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY); cents += r.type === 'expense' ? -a : a; });
@@ -397,7 +403,7 @@ function isValidSnapshot(s) {
     ledgerWithinLimit(s.records, s.opening, s.carry || 0) &&
     (s.savedAt === undefined || (typeof s.savedAt === 'string' && !isNaN(Date.parse(s.savedAt))));
 }
-/* Commit related keys as one best-effort transaction, with rollback on any failed verification. */
+/* Write related keys together; roll back on failure. */
 function commitBundle(values) {
   if (crossTabConflict) return false;
   var old = {}, keys = Object.keys(values), written = [];
@@ -443,9 +449,7 @@ function readAuto(key) {
   try {
     var s = JSON.parse(raw);
     if (!isValidSnapshot(s)) return null;
-    return { app: s.app, version: s.version, savedAt: s.savedAt || '',
-      records: normalizeRecords(s.records), opening: normalizeMoney(s.opening),
-      carry: s.carry === undefined ? 0 : normalizeMoney(s.carry) };
+    return normalizeSnapshot(s);
   } catch (e) { return null; }
 }
 function readRawPart(key) {
@@ -487,7 +491,7 @@ var recoveredFromBackup = false;
   }
   dataBroken = true;
   storageBlocked = true;
-  /* Preserve every original byte for manual recovery; never erase damaged source data. */
+  /* Keep damaged data for manual recovery; never erase it. */
   try {
     localStorage.setItem('finance-personal-v1:broken-dump', JSON.stringify({
       records: readRawPart(LS_RECORDS), opening: readRawPart(LS_OPENING), carry: readRawPart(LS_CARRY)
@@ -495,7 +499,7 @@ var recoveredFromBackup = false;
   } catch (e) {}
 })();
 
-/* ---- Balance and ledger: one model feeds the screen and the copied text ---- */
+/* ---- Balance and ledger: one model feeds the screen ---- */
 function balanceTotal() {
   var cents = toCents(opening) + toCents(carry);
   records.forEach(function (r) {
@@ -589,7 +593,8 @@ function runRetentionCleanup() {
   records.forEach(function (r) {
     if (r.date < cutoff) {
       dropped++;
-      droppedCents += r.type === 'expense' ? -toCents(r.amount) : toCents(r.amount);
+      var c = toCents(r.amount, r.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY);
+      droppedCents += r.type === 'expense' ? -c : c;
     } else keep.push(r);
   });
   if (!dropped) { lastRetentionDate = today; return false; }
@@ -605,10 +610,16 @@ function runRetentionCleanup() {
 
 /* ---- Confirm every entry before it is recorded ---- */
 var draft = null;
+function focusSoon(id) { setTimeout(function () { $(id).focus(); }, 30); }
+function closeOnBackdrop(overlayId, closeFn) {
+  $(overlayId).addEventListener('click', function (e) {
+    if (e.target === $(overlayId)) closeFn();
+  });
+}
 function openConfirm(text) {
   $('confirm-text').innerHTML = text;
   $('confirm-overlay').classList.add('open');
-  setTimeout(function () { $('btn-confirm').focus(); }, 30);
+  focusSoon('btn-confirm');
 }
 function closeConfirm() {
   $('confirm-overlay').classList.remove('open');
@@ -697,12 +708,10 @@ function toggleEntry(which) {
 $('btn-toggle-income').addEventListener('click', function () { toggleEntry('income'); });
 $('btn-toggle-expense').addEventListener('click', function () { toggleEntry('expense'); });
 $('btn-cancel').addEventListener('click', closeConfirm);
-$('confirm-overlay').addEventListener('click', function (e) {
-  if (e.target === $('confirm-overlay')) closeConfirm();
-});
+closeOnBackdrop('confirm-overlay', closeConfirm);
 function openHelp() {
   $('help-overlay').classList.add('open');
-  setTimeout(function () { $('btn-help-close').focus(); }, 30);
+  focusSoon('btn-help-close');
 }
 function closeHelp() { $('help-overlay').classList.remove('open'); }
 $('btn-help').addEventListener('click', openHelp);
@@ -712,9 +721,7 @@ $('st-balance').addEventListener('keydown', function (e) {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAdjust(); }
 });
 $('btn-help-close').addEventListener('click', closeHelp);
-$('help-overlay').addEventListener('click', function (e) {
-  if (e.target === $('help-overlay')) closeHelp();
-});
+closeOnBackdrop('help-overlay', closeHelp);
 $('btn-exit').addEventListener('click', function () {
   $('exit-screen').classList.add('open');
 });
@@ -852,9 +859,7 @@ $('file-import').addEventListener('change', function () {
     var snap;
     try { snap = JSON.parse(String(reader.result).trim()); } catch (e) { snap = null; }
     if (!isValidSnapshot(snap)) { toast('That is not a valid backup. No data was changed.', true); return; }
-    snap = { app: snap.app, version: snap.version, savedAt: snap.savedAt || '',
-      records: normalizeRecords(snap.records), opening: normalizeMoney(snap.opening),
-      carry: snap.carry === undefined ? 0 : normalizeMoney(snap.carry) };
+    snap = normalizeSnapshot(snap);
     closeHelp();
     draft = { type: 'import', snap: snap };
     var snapCents = toCents(snap.opening) + toCents(snap.carry);
@@ -873,7 +878,7 @@ function openAdjust() {
   $('adjust-memo').value = '';
   refreshAdjustPreview();
   $('adjust-overlay').classList.add('open');
-  setTimeout(function () { $('adjust-amount').focus(); }, 30);
+  focusSoon('adjust-amount');
 }
 function closeAdjust() { $('adjust-overlay').classList.remove('open'); }
 function refreshAdjustPreview() {
@@ -892,9 +897,7 @@ function refreshAdjustPreview() {
 }
 $('adjust-amount').addEventListener('input', refreshAdjustPreview);
 $('btn-adjust-cancel').addEventListener('click', closeAdjust);
-$('adjust-overlay').addEventListener('click', function (e) {
-  if (e.target === $('adjust-overlay')) closeAdjust();
-});
+closeOnBackdrop('adjust-overlay', closeAdjust);
 $('btn-adjust-confirm').addEventListener('click', function () {
   if (!canMutate()) return;
   var raw = $('adjust-amount').value.trim();
