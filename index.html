@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Financial Audit</title>
+<title>Personal ledger</title>
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
@@ -207,7 +207,11 @@
     <p>5. Tap c for month and balance, long-press for records.</p>
     <p>6. Exit: blank screen, reopen to return.</p>
     <p>7. Each record can be deleted.</p>
-    <p>8. Everything stays on this phone.</p>
+    <p>8. Everything stays on this phone. Browsers may clear site data after long disuse, so export a backup now and then (and add this page to your Home Screen).</p>
+    <div class="btns">
+      <button type="button" class="dbtn secondary" id="btn-export">Export backup</button>
+      <button type="button" class="dbtn secondary" id="btn-import">Import backup</button>
+    </div>
     <div class="btns">
       <button type="button" class="dbtn" id="btn-help-close">Close</button>
     </div>
@@ -248,12 +252,13 @@ function todayStr() {
   var d = new Date();
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 }
+var CURRENCY = 'CA$';
 function fmtMoney(n) {
   var neg = n < 0;
   var v = (Math.round(Math.abs(n) * 100) / 100).toFixed(2);
   var parts = v.split('.');
   parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  return (neg ? '-' : '') + 'CA$' + parts.join('.');
+  return (neg ? '-' : '') + CURRENCY + parts.join('.');
 }
 var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 var MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -375,7 +380,7 @@ if (!bootCarryP.corrupt && typeof bootCarryP.value === 'number' && isFinite(boot
 var dataBroken = false;
 var recoveredFromBackup = false;
 (function bootCheck() {
-  var recordsOk = !bootRecordsP.corrupt && Array.isArray(bootRecordsP.value) && isValidRecords(records);
+  var recordsOk = !bootRecordsP.corrupt && Array.isArray(bootRecordsP.value) && isValidRecords(bootRecordsP.value);
   if (recordsOk) return;
   var snap = readAuto(LS_AUTO1) || readAuto(LS_AUTO2);
   if (snap) {
@@ -388,6 +393,10 @@ var recoveredFromBackup = false;
     return;
   }
   dataBroken = true;
+  try {
+    var rawDump = JSON.stringify({ records: readRawPart(LS_RECORDS), opening: readRawPart(LS_OPENING), carry: readRawPart(LS_CARRY) });
+    localStorage.setItem('finance-personal-v1:broken-dump', rawDump);
+  } catch (e) {}
   try {
     [LS_RECORDS, LS_OPENING, LS_CARRY].forEach(function (k) {
       localStorage.removeItem(k);
@@ -522,7 +531,11 @@ function closeConfirm() {
 }
 function failSave() { closeConfirm(); toast('Save failed. Please try again.', true); }
 function parseAmount(raw) {
-  return Math.round(parseFloat(raw) * 100) / 100;
+  var t = String(raw).replace(/[\s\u00a0]/g, '');
+  if (/^-?\d+,\d{1,2}$/.test(t)) t = t.replace(',', '.');   /* 12,5 -> 12.5 */
+  else t = t.replace(/,(?=\d{3}(\D|$))/g, '');               /* 1,234.5 -> 1234.5 */
+  if (!/^-?(\d+\.?\d*|\.\d+)$/.test(t)) return NaN;
+  return Math.round(parseFloat(t) * 100) / 100;
 }
 function parseEntryAmount(raw) {
   if (!raw) return null;
@@ -535,6 +548,12 @@ function dupGuard(key) {
   if (lastSubmitKey === key && now - lastSubmitAt < 3000) return true;
   lastSubmitKey = key; lastSubmitAt = now;
   return false;
+}
+function dupBlocked(key) {
+  if (!dupGuard(key)) return false;
+  closeConfirm();
+  toast('Same entry just now. Ignored.');
+  return true;
 }
 $('btn-opening').addEventListener('click', function () {
   var raw = $('opening-amount').value.trim();
@@ -616,7 +635,7 @@ $('btn-reopen').addEventListener('click', function () {
 $('btn-confirm').addEventListener('click', function () {
   if (!draft) return;
   if (draft.type === 'opening') {
-    if (dupGuard(['opening', draft.amount, todayStr()].join('|'))) return;
+    if (dupBlocked(['opening', draft.amount, todayStr()].join('|'))) return;
     var val = draft.amount;
     var prevOpening = opening, prevSet = openingSet;
     opening = val; openingSet = true;
@@ -630,11 +649,26 @@ $('btn-confirm').addEventListener('click', function () {
     toast('Opening balance set.');
     return;
   }
+  if (draft.type === 'import') {
+    var sn = draft.snap;
+    var o = { r: records, o: opening, c: carry, s: openingSet };
+    records = sn.records; opening = sn.opening; carry = sn.carry; openingSet = true;
+    if (!saveRecords(records) || !saveOpening(opening) || !saveCarry(carry)) {
+      records = o.r; opening = o.o; carry = o.c; openingSet = o.s;
+      saveRecords(records); saveOpening(opening); saveCarry(carry);
+      failSave(); return;
+    }
+    autoBackup();
+    closeConfirm();
+    render();
+    toast('Backup imported.');
+    return;
+  }
   if (draft.type === 'delete') {
     var idx = -1;
     for (var i = 0; i < records.length; i++) { if (records[i].id === draft.id) { idx = i; break; } }
     if (idx < 0) { closeConfirm(); toast('That entry is already gone.'); return; }
-    if (dupGuard(['delete', draft.id].join('|'))) return;
+    if (dupBlocked(['delete', draft.id].join('|'))) return;
     var removed = records.splice(idx, 1)[0];
     if (!saveRecords(records)) {
       records.splice(idx, 0, removed);
@@ -646,7 +680,7 @@ $('btn-confirm').addEventListener('click', function () {
     toast('Entry deleted.');
     return;
   }
-  if (dupGuard([draft.type, draft.amount, todayStr(), draft.memo].join('|'))) return;
+  if (dupBlocked([draft.type, draft.amount, todayStr(), draft.memo].join('|'))) return;
   var rec = { id: uid(), type: draft.type, date: todayStr(), amount: draft.amount,
     memo: draft.memo, createdAt: new Date().toISOString() };
   records.push(rec);
@@ -671,6 +705,7 @@ function buildMonthBalanceText() {
 function buildRecordsText() {
   var lines = [];
   ledgerModel().forEach(function (row) {
+    if (row.kind === 'carry') { lines.push('Carried forward · ' + fmtMoney(carry) + ' · Balance ' + fmtMoney(row.run)); return; }
     if (row.kind !== 'record') return;
     var r = row.rec;
     lines.push(fmtDate(r.date) + ' · ' + typeLabel(r.type) +
@@ -707,6 +742,28 @@ function doCopy(text, okMsg) {
 function copyMonthBalance() { doCopy(buildMonthBalanceText(), 'Month and balance copied.'); }
 function copyRecords() { doCopy(buildRecordsText(), 'Records copied. Paste into Google Keep.'); }
 bindLongPress($('btn-copy'), copyRecords, copyMonthBalance);
+
+/* ---- Backup: export copies JSON, import pastes it back ---- */
+$('btn-export').addEventListener('click', function () {
+  doCopy(JSON.stringify(makeSnapshot()), 'Backup copied. Paste it somewhere safe.');
+});
+$('btn-import').addEventListener('click', function () {
+  var raw = window.prompt('Paste the backup text:');
+  if (!raw) return;
+  var snap;
+  try { snap = JSON.parse(raw.trim()); } catch (e) { snap = null; }
+  if (snap) {
+    snap.records = normalizeRecords(snap.records);
+    snap.opening = normalizeMoney(snap.opening);
+    snap.carry = isMoneyValue(snap.carry) ? normalizeMoney(snap.carry) : 0;
+  }
+  if (!isValidSnapshot(snap)) { toast('That is not a valid backup.', true); return; }
+  closeHelp();
+  draft = { type: 'import', snap: snap };
+  openConfirm('Replace ALL current data with this backup?<br>' + snap.records.length +
+    ' records · balance <b>' + esc(fmtMoney(normalizeMoney(snap.opening + snap.carry + snap.records.reduce(function (t, r) {
+      return t + (r.type === 'expense' ? -r.amount : r.amount); }, 0)))) + '</b>');
+});
 
 /* ---- Adjust balance: long-press ? (short tap still opens help) ---- */
 function openAdjust() {
