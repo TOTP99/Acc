@@ -67,6 +67,8 @@
     word-break: break-word;
     max-width: 100%;
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-user-select: none; user-select: none;
   }
   .st-section { border-top: 1px dashed rgba(90,70,0,.30); margin-top: 14px; padding-top: 12px; }
   .st-section h3 { margin: 0 0 8px; font-size: 17px; }
@@ -180,7 +182,7 @@
   <div class="sticker-scroll">
     <div class="st-month" id="st-month"></div>
     <div class="st-balance-label">Balance</div>
-    <div class="st-balance" id="st-balance" role="button" tabindex="0" aria-label="Tap to adjust balance" title="Tap to adjust balance"></div>
+    <div class="st-balance" id="st-balance" role="button" tabindex="0" aria-label="Double-tap to adjust balance" title="Double-tap to adjust balance"></div>
 
     <div class="st-section" id="sec-opening" style="display:none;">
       <h3>Opening balance</h3>
@@ -230,11 +232,13 @@
 <div id="help-overlay" role="presentation">
   <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="help-title">
     <h2 id="help-title">About this sticker</h2>
-    <p>1. Tap the balance number to adjust it.</p>
-    <p>2. Tap c for month and balance.</p>
-    <p>3. Exit: blank screen, reopen to return.</p>
-    <p>4. Everything stays on this phone. Browsers may clear it after long disuse, so export a backup now and then.</p>
-    <p>5. Limits: CA$2,000 per amount, 50 records, 20 characters per memo.</p>
+    <p>1. Add income or a new expense: tap the heading to open the form. Every entry asks you to confirm first. The opening balance is set once, the first time.</p>
+    <p>2. Double-tap the balance number to correct it. Enter the new balance and an optional reason; the difference is saved as an Adjustment.</p>
+    <p>3. Newest entries are on top. Delete removes one entry after confirmation, unless that would push the balance past the limit.</p>
+    <p>4. c copies the month and balance. Exit shows a blank screen; tap anywhere to reopen.</p>
+    <p>5. Entries older than 36 days, and the oldest entry once you reach 50, move into &ldquo;Carried forward&rdquo;. The balance does not change.</p>
+    <p>6. Everything stays on this phone. Browsers may clear it after long disuse, so export a backup now and then (you will be reminded after 30 days). Import replaces all current data.</p>
+    <p>7. Limits: CA$2,000 per amount and balance, 50 records, 20 characters per memo.</p>
     <div class="btns">
       <button type="button" class="dbtn secondary" id="btn-export">Export backup</button>
       <button type="button" class="dbtn secondary" id="btn-import">Import backup</button>
@@ -304,12 +308,12 @@ function uid() {
 
 /* ---- Toast: small floating message ---- */
 var toastTimer = null;
-function toast(msg, isErr) {
+function toast(msg, isErr, ms) {
   var t = $('toast');
   t.textContent = msg;
   t.className = 'show' + (isErr ? ' err' : '');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(function () { t.className = ''; }, 2600);
+  toastTimer = setTimeout(function () { t.className = ''; }, ms || 2600);
 }
 
 /* ---- Storage: localStorage only ---- */
@@ -318,6 +322,10 @@ var LS_OPENING = 'finance-personal-v1:opening';
 var LS_CARRY = 'finance-personal-v1:carry';
 var LS_AUTO1 = 'finance-personal-v1:auto-backup';
 var LS_AUTO2 = 'finance-personal-v1:auto-backup-prev';
+var LS_LASTEXPORT = 'finance-personal-v1:last-export';
+var LS_FIRSTSEEN = 'finance-personal-v1:first-seen';
+var LS_REMINDED = 'finance-personal-v1:reminded-on';
+var BACKUP_REMIND_DAYS = 30;
 /* Money is calculated in integer cents. */
 var MAX_MONEY = 2000; // hard ceiling per balance/entry: CA$2,000
 var MAX_RECORDS = 50;
@@ -546,7 +554,7 @@ function render() {
   $('sec-opening').style.display = openingSet ? 'none' : 'block';
   var list = $('ledger-list');
   list.innerHTML = '';
-  var rows = ledgerModel().filter(function (row) { return row.kind !== 'opening'; });
+  var rows = ledgerModel().filter(function (row) { return row.kind !== 'opening'; }).reverse(); /* newest first */
   if (!rows.length) {
     list.innerHTML = '<div class="small">No records yet.</div>';
     return;
@@ -607,6 +615,26 @@ function runRetentionCleanup() {
   autoBackup();
   return true;
 }
+
+/* ---- Full ledger: fold the oldest record into "Carried forward" (balance unchanged) ---- */
+function makeRoom() {
+  if (records.length < MAX_RECORDS) return false;
+  var oldest = records.slice().sort(function (a, b) {
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? -1 : 1;
+    return 0;
+  })[0];
+  var c = toCents(oldest.amount, oldest.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY);
+  var nextCents = toCents(carry) + (oldest.type === 'expense' ? -c : c);
+  if (!Number.isSafeInteger(nextCents) || Math.abs(nextCents) > MAX_MONEY * 100) return null;
+  var keep = records.filter(function (x) { return x.id !== oldest.id; });
+  var nextCarry = fromCents(nextCents), values = {};
+  values[LS_RECORDS] = keep; values[LS_CARRY] = nextCarry;
+  if (!commitBundle(values)) return null;
+  records = keep; carry = nextCarry;
+  return true;
+}
+var FULL_MSG = 'Record limit reached (50) and the oldest record could not be archived. Export a backup before continuing.';
 
 /* ---- Confirm every entry before it is recorded ---- */
 var draft = null;
@@ -716,17 +744,28 @@ function openHelp() {
 function closeHelp() { $('help-overlay').classList.remove('open'); }
 $('btn-help').addEventListener('click', openHelp);
 /* Balance number opens the adjust dialog */
-$('st-balance').addEventListener('click', openAdjust);
+/* Double-tap / double-click only, so a stray single tap never opens it.
+   Timing is tracked by hand because mobile browsers fire dblclick unreliably. */
+var lastBalanceTap = 0;
+$('st-balance').addEventListener('click', function () {
+  var now = Date.now();
+  if (now - lastBalanceTap < 400) { lastBalanceTap = 0; openAdjust(); }
+  else lastBalanceTap = now;
+});
 $('st-balance').addEventListener('keydown', function (e) {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAdjust(); }
 });
 $('btn-help-close').addEventListener('click', closeHelp);
 closeOnBackdrop('help-overlay', closeHelp);
 $('btn-exit').addEventListener('click', function () {
+  document.querySelector('.sticker').inert = true;
   $('exit-screen').classList.add('open');
+  focusSoon('btn-reopen');
 });
 function reopen() {
   $('exit-screen').classList.remove('open');
+  document.querySelector('.sticker').inert = false;
+  focusSoon('btn-exit');
 }
 $('btn-reopen').addEventListener('click', function (e) {
   e.stopPropagation();
@@ -772,6 +811,12 @@ $('btn-confirm').addEventListener('click', function () {
     var idx = -1;
     for (var i = 0; i < records.length; i++) { if (records[i].id === draft.id) { idx = i; break; } }
     if (idx < 0) { closeConfirm(); toast('That entry is already gone.'); return; }
+    var remaining = records.filter(function (x) { return x.id !== draft.id; });
+    if (!ledgerWithinLimit(remaining, opening, carry)) {
+      closeConfirm();
+      toast('Deleting this would push the balance past the CA$2,000 limit. Adjust the balance first.', true);
+      return;
+    }
     if (dupBlocked(['delete', draft.id].join('|'))) return;
     var removed = records.splice(idx, 1)[0];
     if (!saveRecords(records)) {
@@ -785,9 +830,10 @@ $('btn-confirm').addEventListener('click', function () {
     return;
   }
   if (dupBlocked([draft.type, draft.amount, todayStr(), draft.memo].join('|'))) return;
-  if (records.length >= MAX_RECORDS) { toast('Record limit reached (50). Export a backup before continuing.', true); return; }
   var projectedCents = toCents(balanceTotal()) + (draft.type === 'expense' ? -toCents(draft.amount) : toCents(draft.amount));
   if (!Number.isSafeInteger(projectedCents) || Math.abs(projectedCents) > MAX_MONEY * 100) { toast('This entry would exceed the supported balance limit.', true); return; }
+  var rolled = makeRoom();
+  if (rolled === null) { closeConfirm(); toast(FULL_MSG, true); return; }
   var rec = { id: uid(), type: draft.type, date: todayStr(), amount: draft.amount,
     memo: draft.memo, createdAt: new Date().toISOString() };
   records.push(rec);
@@ -802,7 +848,7 @@ $('btn-confirm').addEventListener('click', function () {
   var doneType = draft.type;
   closeConfirm();
   render();
-  toast(doneType === 'income' ? 'Income added.' : 'Expense added.');
+  toast((doneType === 'income' ? 'Income added.' : 'Expense added.') + (rolled ? ' Oldest record moved to Carried forward.' : ''));
 });
 
 /* ---- Copy: tap c for month and balance ---- */
@@ -847,6 +893,7 @@ $('btn-export').addEventListener('click', function () {
   a.click();
   document.body.removeChild(a);
   setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  try { localStorage.setItem(LS_LASTEXPORT, String(Date.now())); } catch (e) {}
   toast('Backup downloaded. Find it in Files.');
 });
 $('btn-import').addEventListener('click', function () { $('file-import').click(); });
@@ -897,7 +944,6 @@ function refreshAdjustPreview() {
 }
 $('adjust-amount').addEventListener('input', refreshAdjustPreview);
 $('btn-adjust-cancel').addEventListener('click', closeAdjust);
-closeOnBackdrop('adjust-overlay', closeAdjust);
 $('btn-adjust-confirm').addEventListener('click', function () {
   if (!canMutate()) return;
   var raw = $('adjust-amount').value.trim();
@@ -907,7 +953,8 @@ $('btn-adjust-confirm').addEventListener('click', function () {
   var delta = fromCents(toCents(nw) - toCents(balanceTotal()));
   if (delta === 0) { closeAdjust(); toast('No change.'); return; }
   if (!isFinite(delta) || Math.abs(delta) > MAX_MONEY * 2) { toast('Adjustment exceeds the supported limit.', true); return; }
-  if (records.length >= MAX_RECORDS) { toast('Record limit reached (50). Export a backup before continuing.', true); return; }
+  var rolledA = makeRoom();
+  if (rolledA === null) { toast(FULL_MSG, true); return; }
   var rec = { id: uid(), type: 'adjustment', date: todayStr(), amount: delta,
     memo: $('adjust-memo').value.trim() || 'Balance adjustment', createdAt: new Date().toISOString() };
   records.push(rec);
@@ -920,7 +967,7 @@ $('btn-adjust-confirm').addEventListener('click', function () {
   runRetentionCleanup();
   closeAdjust();
   render();
-  toast('Balance adjusted.');
+  toast('Balance adjusted.' + (rolledA ? ' Oldest record moved to Carried forward.' : ''));
 });
 
 /* Another tab must never silently overwrite this tab's in-memory ledger. */
@@ -958,8 +1005,20 @@ if (!storageBlocked) {
   runRetentionCleanup();
 }
 render();
+function backupReminder() {
+  try {
+    var now = Date.now();
+    var base = Number(localStorage.getItem(LS_LASTEXPORT)) || Number(localStorage.getItem(LS_FIRSTSEEN));
+    if (!base) { localStorage.setItem(LS_FIRSTSEEN, String(now)); return; }
+    if (now - base < BACKUP_REMIND_DAYS * 86400000) return;
+    if (localStorage.getItem(LS_REMINDED) === todayStr()) return;
+    localStorage.setItem(LS_REMINDED, todayStr());
+    toast('No backup in over ' + BACKUP_REMIND_DAYS + ' days. Tap ? then Export backup.', false, 6000);
+  } catch (e) {}
+}
 if (dataBroken) toast('Data damaged: original data preserved. Import a valid backup to resume editing.', true);
 else if (recoveredFromBackup) toast('Restored from auto backup. Please check your balance.');
+else backupReminder();
 })();
 </script>
 </body>
