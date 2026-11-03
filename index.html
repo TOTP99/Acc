@@ -73,7 +73,7 @@
   .lrow .lt { font-size: 15px; }
   .lrow .lm { font-size: 14px; opacity: .8; margin-top: 2px; line-height: 1.4; word-break: break-word; }
   .lrow .la { font-size: 16px; font-weight: bold; margin-top: 2px; }
-  /* ---- Corner buttons on the sticker: Exit (left) and ? (right) ---- */
+  /* ---- Corner buttons: Exit (left), c and ? (right) ---- */
   .st-corner {
     position: absolute; top: 8px; z-index: 4; font-family: inherit; color: #2a2410;
     background: rgba(255,255,255,.65); border: 1px solid rgba(90,70,0,.35);
@@ -81,7 +81,7 @@
   }
   #btn-exit { left: 12px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: bold; }
   #btn-help { right: 12px; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; font-weight: bold; padding: 0; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-  #btn-copy { right: 48px; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; font-weight: bold; padding: 0; }
+  #btn-copy { right: 48px; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; font-weight: bold; padding: 0; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
   /* ---- Borderless entry toggles: tap to expand the form in place ---- */
   .st-toggle {
     display: flex; justify-content: space-between; align-items: center; width: 100%;
@@ -116,6 +116,7 @@
   }
   .dlg h2 { margin: 0 0 10px; font-size: 20px; }
   .dlg p { line-height: 1.5; color: #333; font-size: 15px; margin: 0 0 10px; word-break: break-word; }
+  #help-overlay .dlg p { text-align: left; }
   .dlg .btns { display: flex; gap: 8px; margin-top: 14px; }
   .dlg input[type="text"] {
     width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px;
@@ -144,7 +145,7 @@
 <div class="sticker">
   <div class="tape"></div>
   <button type="button" class="st-corner" id="btn-exit" aria-label="Exit">Exit</button>
-  <button type="button" class="st-corner" id="btn-copy" aria-label="Copy ledger">c</button>
+  <button type="button" class="st-corner" id="btn-copy" aria-label="Copy month and balance, long-press for records">c</button>
   <button type="button" class="st-corner" id="btn-help" aria-label="About this sticker">?</button>
   <div class="sticker-scroll">
     <div class="st-month" id="st-month"></div>
@@ -199,14 +200,14 @@
 <div id="help-overlay">
   <div class="dlg" role="dialog" aria-label="About this sticker">
     <h2>About this sticker</h2>
-    <p>Opening balance: fill it in on first use, then confirm.</p>
-    <p>Add income / New expense: enter the amount, then confirm.</p>
-    <p>Balance can go negative.</p>
-    <p>Long-press ? to adjust the balance.</p>
-    <p>c copies the ledger. Paste it into Google Keep.</p>
-    <p>Exit leaves a blank screen. Reopen to return.</p>
-    <p>Each record can be deleted.</p>
-    <p>Everything stays on this phone.</p>
+    <p>1. Opening balance: set on first use.</p>
+    <p>2. Add income / New expense: enter the amount.</p>
+    <p>3. Balance can go negative.</p>
+    <p>4. Long-press ? to adjust the balance.</p>
+    <p>5. Tap c for month and balance, long-press for records.</p>
+    <p>6. Exit: blank screen, reopen to return.</p>
+    <p>7. Each record can be deleted.</p>
+    <p>8. Everything stays on this phone.</p>
     <div class="btns">
       <button type="button" class="dbtn" id="btn-help-close">Close</button>
     </div>
@@ -229,7 +230,7 @@
 <div id="exit-screen">
   <button type="button" class="sbtn" id="btn-reopen">Reopen</button>
 </div>
-<div id="toast" class="toast"></div>
+<div id="toast"></div>
 
 <script>
 (function () {
@@ -273,9 +274,9 @@ var toastTimer = null;
 function toast(msg, isErr) {
   var t = $('toast');
   t.textContent = msg;
-  t.className = 'toast show' + (isErr ? ' err' : '');
+  t.className = 'show' + (isErr ? ' err' : '');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(function () { t.className = 'toast'; }, 2600);
+  toastTimer = setTimeout(function () { t.className = ''; }, 2600);
 }
 
 /* ---- Storage: localStorage only ---- */
@@ -386,19 +387,16 @@ var recoveredFromBackup = false;
     recoveredFromBackup = true;
     return;
   }
-  if (!recordsOk) {
-    dataBroken = true;
-    try {
-      [LS_RECORDS, LS_OPENING, LS_CARRY].forEach(function (k) {
-        localStorage.removeItem(k);
-      });
-    } catch (e) {}
-    records = [];
-    opening = 0;
-    openingSet = false;
-    carry = 0;
-    return;
-  }
+  dataBroken = true;
+  try {
+    [LS_RECORDS, LS_OPENING, LS_CARRY].forEach(function (k) {
+      localStorage.removeItem(k);
+    });
+  } catch (e) {}
+  records = [];
+  opening = 0;
+  openingSet = false;
+  carry = 0;
 })();
 
 /* ---- Balance and ledger: one model feeds the screen and the copied text ---- */
@@ -466,7 +464,7 @@ function render() {
     el.innerHTML = '<div class="lt">' + esc(fmtDate(r.date)) + ' · ' +
       typeLabel(r.type) + '</div>' + memoHtml +
       '<div class="la">' + esc(signedAmount(r)) + ' · Balance ' + esc(fmtMoney(row.run)) +
-      ' <button type="button" class="ldel" data-id="' + esc(r.id) + '">Delete</button></div>';
+      ' <button type="button" class="ldel">Delete</button></div>';
     el.querySelector('.ldel').addEventListener('click', function () {
       draft = { type: 'delete', id: r.id };
       openConfirm('Delete this entry?<br>' + esc(fmtDate(r.date)) + ' · ' +
@@ -581,26 +579,30 @@ $('confirm-overlay').addEventListener('click', function (e) {
 });
 function openHelp() { $('help-overlay').classList.add('open'); }
 function closeHelp() { $('help-overlay').classList.remove('open'); }
-var helpLongPressAt = 0, helpLongPressTimer = null;
-function clearHelpLongPress() {
-  if (helpLongPressTimer) { clearTimeout(helpLongPressTimer); helpLongPressTimer = null; }
+/* Hold-to-act buttons (? and c): a 600ms hold runs the long-press action,
+   a short tap runs the tap action. A click always follows a long-press, so
+   the click arriving right after one is swallowed, not run as a tap. */
+function bindLongPress(btn, onLongPress, onTap) {
+  var at = 0, timer = null;
+  function clear() { if (timer) { clearTimeout(timer); timer = null; } }
+  btn.addEventListener('pointerdown', function () {
+    clear();
+    timer = setTimeout(function () {
+      timer = null;
+      at = Date.now();
+      onLongPress();
+    }, 600);
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) {
+    btn.addEventListener(ev, clear);
+  });
+  btn.addEventListener('click', function () {
+    if (at && Date.now() - at < 2000) { at = 0; return; }
+    onTap();
+  });
+  btn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 }
-$('btn-help').addEventListener('pointerdown', function () {
-  clearHelpLongPress();
-  helpLongPressTimer = setTimeout(function () {
-    helpLongPressTimer = null;
-    helpLongPressAt = Date.now();
-    openAdjust();
-  }, 600);
-});
-['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) {
-  $('btn-help').addEventListener(ev, clearHelpLongPress);
-});
-$('btn-help').addEventListener('click', function () {
-  if (helpLongPressAt && Date.now() - helpLongPressAt < 2000) { helpLongPressAt = 0; return; }
-  openHelp();
-});
-$('btn-help').addEventListener('contextmenu', function (e) { e.preventDefault(); });
+bindLongPress($('btn-help'), openAdjust, openHelp);
 $('btn-help-close').addEventListener('click', closeHelp);
 $('help-overlay').addEventListener('click', function (e) {
   if (e.target === $('help-overlay')) closeHelp();
@@ -662,23 +664,20 @@ $('btn-confirm').addEventListener('click', function () {
   toast(doneType === 'income' ? 'Income added.' : 'Expense added.');
 });
 
-/* ---- Copy ledger: plain text for a manual paste into Google Keep ---- */
-function buildLedgerText() {
-  var lines = [monthTitleNow(), 'Balance: ' + fmtMoney(balanceTotal())];
-  var rows = ledgerModel();
-  rows.forEach(function (row) {
-    if (row.kind === 'carry') {
-      lines.push('Carried forward: ' + fmtMoney(carry) + ' · Balance ' + fmtMoney(row.run));
-    } else if (row.kind === 'opening') {
-      lines.push('Opening: ' + fmtMoney(opening) + ' · Balance ' + fmtMoney(row.run));
-    } else {
-      var r = row.rec;
-      lines.push(fmtDate(r.date) + ' · ' + typeLabel(r.type) +
-        ' · ' + signedAmount(r) + (r.memo ? ' · ' + r.memo : '') +
-        ' · Balance ' + fmtMoney(row.run));
-    }
+/* ---- Copy: tap c for month and balance, long-press c for records ---- */
+function buildMonthBalanceText() {
+  return [monthTitleNow(), 'Balance: ' + fmtMoney(balanceTotal())].join('\n');
+}
+function buildRecordsText() {
+  var lines = [];
+  ledgerModel().forEach(function (row) {
+    if (row.kind !== 'record') return;
+    var r = row.rec;
+    lines.push(fmtDate(r.date) + ' · ' + typeLabel(r.type) +
+      ' · ' + signedAmount(r) + (r.memo ? ' · ' + r.memo : '') +
+      ' · Balance ' + fmtMoney(row.run));
   });
-  if (!rows.length) lines.push('No records yet.');
+  if (!lines.length) lines.push('No records yet.');
   return lines.join('\n');
 }
 function fallbackCopy(text) {
@@ -693,10 +692,9 @@ function fallbackCopy(text) {
     return !!ok;
   } catch (e) { return false; }
 }
-function copyLedger() {
-  var text = buildLedgerText();
+function doCopy(text, okMsg) {
   function done(ok) {
-    if (ok) toast('Ledger copied. Paste it into Google Keep.');
+    if (ok) toast(okMsg);
     else toast('Copy failed. Please try again.', true);
   }
   if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -706,7 +704,9 @@ function copyLedger() {
     done(fallbackCopy(text));
   }
 }
-$('btn-copy').addEventListener('click', copyLedger);
+function copyMonthBalance() { doCopy(buildMonthBalanceText(), 'Month and balance copied.'); }
+function copyRecords() { doCopy(buildRecordsText(), 'Records copied. Paste into Google Keep.'); }
+bindLongPress($('btn-copy'), copyRecords, copyMonthBalance);
 
 /* ---- Adjust balance: long-press ? (short tap still opens help) ---- */
 function openAdjust() {
@@ -761,13 +761,9 @@ $('btn-adjust-confirm').addEventListener('click', function () {
 /* ---- Startup: clean old records, then render ---- */
 if (bootCarryP.corrupt) saveCarry(carry);
 runRetentionCleanup();
-if (dataBroken) {
-  render();
-  toast('Previous data could not be read, starting fresh.', true);
-} else {
-  render();
-  if (recoveredFromBackup) toast('Restored from auto backup. Please check your balance.');
-}
+render();
+if (dataBroken) toast('Previous data could not be read, starting fresh.', true);
+else if (recoveredFromBackup) toast('Restored from auto backup. Please check your balance.');
 })();
 </script>
 </body>
