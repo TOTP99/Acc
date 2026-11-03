@@ -22,11 +22,18 @@
     aspect-ratio: 1 / 1;
     transform: rotate(-1.5deg);
     background:
-      repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 2px, transparent 2px 6px),
-      repeating-linear-gradient(0deg, rgba(0,0,0,.02) 0 1px, transparent 1px 4px),
-      linear-gradient(175deg, #ffedb0 0%, #ffe671 45%, #ffd94a 100%);
+      /* subtle paper fiber noise */
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E"),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.07) 0 2px, transparent 2px 6px),
+      repeating-linear-gradient(0deg, rgba(0,0,0,.025) 0 1px, transparent 1px 4px),
+      linear-gradient(175deg, #ffedb0 0%, #ffe671 42%, #ffd94a 100%);
     border-radius: 3px;
-    box-shadow: 0 1px 2px rgba(0,0,0,.18), 0 14px 26px rgba(0,0,0,.20), 0 34px 50px rgba(0,0,0,.14);
+    /* layered shadows: contact + mid + soft ambient */
+    box-shadow:
+      0 1px 1px rgba(0,0,0,.12),
+      0 4px 8px rgba(0,0,0,.10),
+      0 16px 28px rgba(0,0,0,.16),
+      0 36px 56px rgba(0,0,0,.12);
     font-family: "Segoe Print", "Bradley Hand", "Chalkboard SE", "Marker Felt", "Comic Sans MS", cursive;
     color: #2a2410;
   }
@@ -42,15 +49,24 @@
     border-left: 1px dashed rgba(0,0,0,.10); border-right: 1px dashed rgba(0,0,0,.10);
     box-shadow: 0 2px 4px rgba(0,0,0,.14); pointer-events: none;
   }
-  /* Folded-up bottom-right corner */
+  /* Folded-up bottom-right corner – slightly softer */
   .sticker::after {
-    content: ""; position: absolute; right: 0; bottom: 0; width: 34px; height: 34px; z-index: 3;
-    background: linear-gradient(315deg, transparent 49%, rgba(0,0,0,.12) 50%, #fff3a3 51%);
+    content: ""; position: absolute; right: 0; bottom: 0; width: 36px; height: 36px; z-index: 3;
+    background: linear-gradient(315deg, transparent 48%, rgba(0,0,0,.10) 49.5%, rgba(0,0,0,.06) 50.5%, #fff3a3 52%);
     border-bottom-right-radius: 3px; pointer-events: none;
+    box-shadow: -1px -1px 2px rgba(0,0,0,.06);
   }
   .st-month { font-size: 22px; font-weight: bold; letter-spacing: .3px; }
   .st-balance-label { font-size: 15px; opacity: .75; margin-top: 8px; }
-  .st-balance { font-size: 38px; font-weight: bold; line-height: 1.15; word-break: break-all; }
+  /* Better handling of long balance numbers */
+  .st-balance {
+    font-size: clamp(22px, 9vw, 38px);
+    font-weight: bold;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-width: 100%;
+  }
   .st-section { border-top: 1px dashed rgba(90,70,0,.30); margin-top: 14px; padding-top: 12px; }
   .st-section h3 { margin: 0 0 8px; font-size: 17px; }
   .sticker input[type="text"] {
@@ -58,14 +74,19 @@
     font-family: inherit; color: inherit;
     background: rgba(255,255,255,.35); border: none; border-bottom: 2px solid rgba(90,70,0,.35);
     border-radius: 2px; outline: none; margin-top: 6px;
+    transition: background .15s ease, border-bottom-color .15s ease;
   }
-  .sticker input[type="text"]:focus { background: rgba(255,255,255,.60); border-bottom-color: #2a2410; }
+  .sticker input[type="text"]:focus {
+    background: rgba(255,255,255,.60);
+    border-bottom-color: #2a2410;
+  }
   .srow { display: flex; gap: 8px; align-items: flex-end; }
   .srow input { flex: 1; }
   .sbtn {
     font-family: inherit; font-size: 16px; font-weight: bold; color: #2a2410;
     background: rgba(255,255,255,.65); border: 1px solid rgba(90,70,0,.35); border-radius: 8px;
     padding: 10px 16px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,.15); white-space: nowrap;
+    transition: transform .08s ease, background .12s ease;
   }
   .sbtn:active { transform: translateY(1px); }
   .small { font-size: 13px; opacity: .75; line-height: 1.45; }
@@ -78,6 +99,12 @@
     position: absolute; top: 8px; z-index: 4; font-family: inherit; color: #2a2410;
     background: rgba(255,255,255,.65); border: 1px solid rgba(90,70,0,.35);
     box-shadow: 0 1px 2px rgba(0,0,0,.15); cursor: pointer;
+    transition: transform .1s ease, background .12s ease, box-shadow .12s ease;
+  }
+  .st-corner.pressed {
+    transform: scale(0.88);
+    background: rgba(255,255,255,.85);
+    box-shadow: 0 0 0 rgba(0,0,0,0);
   }
   #btn-exit { left: 12px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: bold; }
   #btn-help { right: 12px; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; font-weight: bold; padding: 0; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -101,6 +128,7 @@
   #exit-screen {
     position: fixed; inset: 0; background: #d9d2c2; z-index: 80;
     display: none; align-items: center; justify-content: center;
+    cursor: pointer;
   }
   #exit-screen.open { display: flex; }
   /* ---- Confirm popup: on demand only, never automatic ---- */
@@ -132,11 +160,16 @@
     transform: translateX(-50%); max-width: 92vw; padding: 11px 18px; border-radius: 999px;
     background: rgba(20,20,20,.92); color: #fff; font-size: 15px; text-align: center;
     opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 50;
+    line-height: 1.35;
   }
   #toast.show { opacity: 1; }
   #toast.err { background: rgba(160,30,30,.95); }
   @media (prefers-reduced-motion: reduce) {
     .sticker { transform: none; }
+    .st-corner, .sbtn, .sticker input[type="text"] { transition: none; }
+  }
+  @media (max-width: 360px) {
+    .sticker { transform: rotate(-0.8deg); }
   }
 </style>
 </head>
@@ -145,8 +178,8 @@
 <div class="sticker">
   <div class="tape"></div>
   <button type="button" class="st-corner" id="btn-exit" aria-label="Exit">Exit</button>
-  <button type="button" class="st-corner" id="btn-copy" aria-label="Copy month and balance, long-press for records">c</button>
-  <button type="button" class="st-corner" id="btn-help" aria-label="About this sticker">?</button>
+  <button type="button" class="st-corner" id="btn-copy" aria-label="Copy month and balance. Long-press for full records" title="Tap: month & balance · Long-press: records">c</button>
+  <button type="button" class="st-corner" id="btn-help" aria-label="About this sticker. Long-press to adjust balance" title="Tap: help · Long-press: adjust balance">?</button>
   <div class="sticker-scroll">
     <div class="st-month" id="st-month"></div>
     <div class="st-balance-label">Balance</div>
@@ -162,8 +195,8 @@
     </div>
 
     <div class="st-section">
-      <button type="button" class="st-toggle" id="btn-toggle-income">Add income <span class="chev" id="chev-income">▾</span></button>
-      <div class="st-body" id="body-income">
+      <button type="button" class="st-toggle" id="btn-toggle-income" aria-expanded="false" aria-controls="body-income">Add income <span class="chev" id="chev-income">▾</span></button>
+      <div class="st-body" id="body-income" role="region" aria-labelledby="btn-toggle-income">
         <div class="srow">
           <input type="text" id="add-amount" inputmode="decimal" value="100" aria-label="Amount to add">
           <button type="button" class="sbtn" id="btn-add">Add</button>
@@ -173,8 +206,8 @@
     </div>
 
     <div class="st-section">
-      <button type="button" class="st-toggle" id="btn-toggle-expense">New expense <span class="chev" id="chev-expense">▾</span></button>
-      <div class="st-body" id="body-expense">
+      <button type="button" class="st-toggle" id="btn-toggle-expense" aria-expanded="false" aria-controls="body-expense">New expense <span class="chev" id="chev-expense">▾</span></button>
+      <div class="st-body" id="body-expense" role="region" aria-labelledby="btn-toggle-expense">
         <input type="text" id="exp-amount" inputmode="decimal" placeholder="Amount" aria-label="Expense amount">
         <input type="text" id="exp-memo" maxlength="60" placeholder="Memo" aria-label="Expense memo">
         <div style="margin-top:10px;"><button type="button" class="sbtn" id="btn-expense">Submit</button></div>
@@ -187,9 +220,9 @@
   </div>
 </div>
 
-<div id="confirm-overlay">
-  <div class="dlg" role="dialog" aria-label="Confirm">
-    <h2>Confirm</h2>
+<div id="confirm-overlay" role="presentation">
+  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+    <h2 id="confirm-title">Confirm</h2>
     <p id="confirm-text"></p>
     <div class="btns">
       <button type="button" class="dbtn" id="btn-confirm">Confirm</button>
@@ -197,9 +230,9 @@
     </div>
   </div>
 </div>
-<div id="help-overlay">
-  <div class="dlg" role="dialog" aria-label="About this sticker">
-    <h2>About this sticker</h2>
+<div id="help-overlay" role="presentation">
+  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <h2 id="help-title">About this sticker</h2>
     <p>1. Opening balance: set on first use.</p>
     <p>2. Add income / New expense: enter the amount.</p>
     <p>3. Balance can go negative.</p>
@@ -217,9 +250,9 @@
     </div>
   </div>
 </div>
-<div id="adjust-overlay">
-  <div class="dlg" role="dialog" aria-label="Adjust balance">
-    <h2>Adjust balance</h2>
+<div id="adjust-overlay" role="presentation">
+  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="adjust-title">
+    <h2 id="adjust-title">Adjust balance</h2>
     <p>Current balance: <b id="adjust-current"></b></p>
     <p><b id="adjust-preview"></b></p>
     <p>New balance (leave empty to keep the current balance):</p>
@@ -231,10 +264,10 @@
     </div>
   </div>
 </div>
-<div id="exit-screen">
+<div id="exit-screen" role="button" aria-label="Tap anywhere to reopen" tabindex="0">
   <button type="button" class="sbtn" id="btn-reopen">Reopen</button>
 </div>
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <script>
 (function () {
@@ -470,10 +503,11 @@ function render() {
     var el = document.createElement('div');
     el.className = 'lrow';
     var memoHtml = r.memo ? '<div class="lm">' + esc(r.memo) + '</div>' : '';
+    var delLabel = 'Delete ' + typeLabel(r.type) + ' of ' + signedAmount(r) + ' on ' + fmtDate(r.date);
     el.innerHTML = '<div class="lt">' + esc(fmtDate(r.date)) + ' · ' +
       typeLabel(r.type) + '</div>' + memoHtml +
       '<div class="la">' + esc(signedAmount(r)) + ' · Balance ' + esc(fmtMoney(row.run)) +
-      ' <button type="button" class="ldel">Delete</button></div>';
+      ' <button type="button" class="ldel" aria-label="' + esc(delLabel) + '">Delete</button></div>';
     el.querySelector('.ldel').addEventListener('click', function () {
       draft = { type: 'delete', id: r.id };
       openConfirm('Delete this entry?<br>' + esc(fmtDate(r.date)) + ' · ' +
@@ -490,7 +524,11 @@ function cutoff36() {
   d.setDate(d.getDate() - 36);
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 }
+var lastRetentionDate = null;
 function runRetentionCleanup() {
+  var today = todayStr();
+  if (lastRetentionDate === today) return false; // only once per day
+  lastRetentionDate = today;
   var cutoff = cutoff36();
   var keep = [];
   var droppedNet = 0;
@@ -524,6 +562,7 @@ var draft = null;
 function openConfirm(text) {
   $('confirm-text').innerHTML = text;
   $('confirm-overlay').classList.add('open');
+  setTimeout(function () { $('btn-confirm').focus(); }, 30);
 }
 function closeConfirm() {
   $('confirm-overlay').classList.remove('open');
@@ -531,7 +570,7 @@ function closeConfirm() {
 }
 function failSave() { closeConfirm(); toast('Save failed. Please try again.', true); }
 function parseAmount(raw) {
-  var t = String(raw).replace(/[\s\u00a0]/g, '');
+  var t = String(raw).replace(/[\s\u00a0]/g, '').replace(/^\+/, '');
   if (/^-?\d+,\d{1,2}$/.test(t)) t = t.replace(',', '.');   /* 12,5 -> 12.5 */
   else t = t.replace(/,(?=\d{3}(\D|$))/g, '');               /* 1,234.5 -> 1234.5 */
   if (!/^-?(\d+\.?\d*|\.\d+)$/.test(t)) return NaN;
@@ -578,8 +617,12 @@ $('btn-expense').addEventListener('click', function () {
 });
 /* ---- Entry toggles: borderless buttons expand the form in place, one at a time ---- */
 function syncToggleChevrons() {
-  $('chev-income').textContent = $('body-income').classList.contains('open') ? '▴' : '▾';
-  $('chev-expense').textContent = $('body-expense').classList.contains('open') ? '▴' : '▾';
+  var incOpen = $('body-income').classList.contains('open');
+  var expOpen = $('body-expense').classList.contains('open');
+  $('chev-income').textContent = incOpen ? '▴' : '▾';
+  $('chev-expense').textContent = expOpen ? '▴' : '▾';
+  $('btn-toggle-income').setAttribute('aria-expanded', incOpen ? 'true' : 'false');
+  $('btn-toggle-expense').setAttribute('aria-expanded', expOpen ? 'true' : 'false');
 }
 function toggleEntry(which) {
   var inc = $('body-income'), exp = $('body-expense');
@@ -587,7 +630,15 @@ function toggleEntry(which) {
   var willOpen = !target.classList.contains('open');
   inc.classList.remove('open');
   exp.classList.remove('open');
-  if (willOpen) target.classList.add('open');
+  if (willOpen) {
+    target.classList.add('open');
+    // Auto-focus the amount field for faster entry
+    setTimeout(function () {
+      var focusId = which === 'income' ? 'add-amount' : 'exp-amount';
+      var el = $(focusId);
+      if (el) { el.focus(); el.select && el.select(); }
+    }, 40);
+  }
   syncToggleChevrons();
 }
 $('btn-toggle-income').addEventListener('click', function () { toggleEntry('income'); });
@@ -596,19 +647,29 @@ $('btn-cancel').addEventListener('click', closeConfirm);
 $('confirm-overlay').addEventListener('click', function (e) {
   if (e.target === $('confirm-overlay')) closeConfirm();
 });
-function openHelp() { $('help-overlay').classList.add('open'); }
+function openHelp() {
+  $('help-overlay').classList.add('open');
+  setTimeout(function () { $('btn-help-close').focus(); }, 30);
+}
 function closeHelp() { $('help-overlay').classList.remove('open'); }
 /* Hold-to-act buttons (? and c): a 600ms hold runs the long-press action,
    a short tap runs the tap action. A click always follows a long-press, so
-   the click arriving right after one is swallowed, not run as a tap. */
+   the click arriving right after one is swallowed, not run as a tap.
+   Visual pressed state is applied while the finger is down. */
 function bindLongPress(btn, onLongPress, onTap) {
   var at = 0, timer = null;
-  function clear() { if (timer) { clearTimeout(timer); timer = null; } }
-  btn.addEventListener('pointerdown', function () {
+  function clear() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    btn.classList.remove('pressed');
+  }
+  btn.addEventListener('pointerdown', function (e) {
+    if (e.button && e.button !== 0) return;
     clear();
+    btn.classList.add('pressed');
     timer = setTimeout(function () {
       timer = null;
       at = Date.now();
+      btn.classList.remove('pressed');
       onLongPress();
     }, 600);
   });
@@ -629,8 +690,17 @@ $('help-overlay').addEventListener('click', function (e) {
 $('btn-exit').addEventListener('click', function () {
   $('exit-screen').classList.add('open');
 });
-$('btn-reopen').addEventListener('click', function () {
+function reopen() {
   $('exit-screen').classList.remove('open');
+}
+$('btn-reopen').addEventListener('click', function (e) {
+  e.stopPropagation();
+  reopen();
+});
+/* Whole exit screen is tappable to reopen */
+$('exit-screen').addEventListener('click', reopen);
+$('exit-screen').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); reopen(); }
 });
 $('btn-confirm').addEventListener('click', function () {
   if (!draft) return;
@@ -772,6 +842,7 @@ function openAdjust() {
   $('adjust-memo').value = '';
   refreshAdjustPreview();
   $('adjust-overlay').classList.add('open');
+  setTimeout(function () { $('adjust-amount').focus(); }, 30);
 }
 function closeAdjust() { $('adjust-overlay').classList.remove('open'); }
 function refreshAdjustPreview() {
