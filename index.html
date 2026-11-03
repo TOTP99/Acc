@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Personal ledger</title>
+<title>Personal ledger · Offline</title>
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
@@ -164,6 +164,7 @@
   }
   #toast.show { opacity: 1; }
   #toast.err { background: rgba(160,30,30,.95); }
+  .dlg button:focus-visible, .sbtn:focus-visible, .st-corner:focus-visible, .ldel:focus-visible, .st-toggle:focus-visible { outline: 3px solid #2f7de1; outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) {
     .sticker { transform: none; }
     .st-corner, .sbtn, .sticker input[type="text"] { transition: none; }
@@ -241,6 +242,7 @@
     <p>6. Exit: blank screen, reopen to return.</p>
     <p>7. Each record can be deleted.</p>
     <p>8. Everything stays on this phone. Browsers may clear site data after long disuse, so export a backup now and then (and add this page to your Home Screen).</p>
+    <p>9. Amounts are limited to CA$1 billion each; calculations use exact cents. Keep a separate exported backup because automatic backups are stored in this browser only.</p>
     <div class="btns">
       <button type="button" class="dbtn secondary" id="btn-export">Export backup</button>
       <button type="button" class="dbtn secondary" id="btn-import">Import backup</button>
@@ -323,8 +325,22 @@ var LS_OPENING = 'finance-personal-v1:opening';
 var LS_CARRY = 'finance-personal-v1:carry';
 var LS_AUTO1 = 'finance-personal-v1:auto-backup';
 var LS_AUTO2 = 'finance-personal-v1:auto-backup-prev';
+/* All calculations use integer cents. Stored values remain decimal dollars for v1 compatibility. */
+var MAX_MONEY = 1000000000; // hard ceiling per balance/entry: CA$1 billion
+var MAX_RECORDS = 20000;
+var MAX_MEMO = 60;
+var storageBlocked = false;
+var crossTabConflict = false;
+function toCents(v, limit) {
+  var max = (typeof limit === 'number' && isFinite(limit)) ? limit : MAX_MONEY;
+  if (typeof v !== 'number' || !isFinite(v) || Math.abs(v) > max) return null;
+  var c = Math.round((v + (v >= 0 ? Number.EPSILON : -Number.EPSILON)) * 100);
+  return Number.isSafeInteger(c) ? c : null;
+}
+function fromCents(c) { return c / 100; }
 function normalizeMoney(v) {
-  return (typeof v === 'number' && isFinite(v)) ? Math.round(v * 100) / 100 : 0;
+  var c = toCents(v);
+  return c === null ? 0 : fromCents(c);
 }
 function writeVerified(key, json) {
   var ok = false;
@@ -342,26 +358,78 @@ function saveVerified(key, val) {
 function saveRecords(r) { return saveVerified(LS_RECORDS, r); }
 function saveOpening(v) { return saveVerified(LS_OPENING, v); }
 function saveCarry(v) { return saveVerified(LS_CARRY, v); }
+function validDateString(ds) {
+  if (typeof ds !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(ds)) return false;
+  var y = Number(ds.slice(0,4)), m = Number(ds.slice(5,7)), d = Number(ds.slice(8,10));
+  var dt = new Date(y, m - 1, d);
+  return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+}
 function isValidRecord(r) {
   if (!r || (r.type !== 'income' && r.type !== 'expense' && r.type !== 'adjustment')) return false;
-  if (typeof r.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(r.date)) return false;
-  if (typeof r.amount !== 'number' || !isFinite(r.amount)) return false;
-  if (typeof r.id !== 'string' || !r.id) return false;
-  return r.type === 'adjustment' ? r.amount !== 0 : r.amount > 0;
+  if (!validDateString(r.date)) return false;
+  var amountLimit = r.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY;
+  if (toCents(r.amount, amountLimit) === null) return false;
+  if (typeof r.id !== 'string' || !r.id || r.id.length > 128) return false;
+  if (r.memo !== undefined && (typeof r.memo !== 'string' || r.memo.length > MAX_MEMO)) return false;
+  if (r.createdAt !== undefined && typeof r.createdAt !== 'string') return false;
+  return r.type === 'adjustment' ? toCents(r.amount, amountLimit) !== 0 : toCents(r.amount) > 0;
 }
-function isValidRecords(v) { return Array.isArray(v) && v.every(isValidRecord); }
-function isMoneyValue(v) { return typeof v === 'number' && isFinite(v); }
+function isValidRecords(v) {
+  if (!Array.isArray(v) || v.length > MAX_RECORDS || !v.every(isValidRecord)) return false;
+  var seen = Object.create(null);
+  for (var i = 0; i < v.length; i++) {
+    if (seen[v[i].id]) return false;
+    seen[v[i].id] = true;
+  }
+  return true;
+}
+function isMoneyValue(v) { return toCents(v) !== null; }
 function normalizeRecords(list) {
   if (!Array.isArray(list)) return [];
-  return list.filter(isValidRecord).map(function (r) {
-    return { id: r.id, type: r.type, date: r.date, amount: normalizeMoney(r.amount),
+  return list.map(function (r) {
+    return { id: r.id, type: r.type, date: r.date, amount: fromCents(toCents(r.amount, r.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY)),
       memo: (typeof r.memo === 'string') ? r.memo : '',
       createdAt: (typeof r.createdAt === 'string') ? r.createdAt : '' };
   });
 }
+function ledgerWithinLimit(list, op, ca) {
+  var cents = toCents(op) + toCents(ca || 0);
+  list.forEach(function (r) { var a = toCents(r.amount, r.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY); cents += r.type === 'expense' ? -a : a; });
+  return Number.isSafeInteger(cents) && Math.abs(cents) <= MAX_MONEY * 100;
+}
 function isValidSnapshot(s) {
-  return !!s && s.app === 'finance-personal' && isValidRecords(s.records) &&
-    isMoneyValue(s.opening) && (s.carry === undefined || isMoneyValue(s.carry));
+  return !!s && s.app === 'finance-personal' && s.version === 1 &&
+    isValidRecords(s.records) && isMoneyValue(s.opening) &&
+    (s.carry === undefined || isMoneyValue(s.carry)) &&
+    ledgerWithinLimit(s.records, s.opening, s.carry || 0) &&
+    (s.savedAt === undefined || (typeof s.savedAt === 'string' && !isNaN(Date.parse(s.savedAt))));
+}
+/* Commit related keys as one best-effort transaction, with rollback on any failed verification. */
+function commitBundle(values) {
+  if (crossTabConflict) return false;
+  var old = {}, keys = Object.keys(values), written = [];
+  try {
+    keys.forEach(function (k) { old[k] = localStorage.getItem(k); });
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i], json = JSON.stringify(values[k]);
+      written.push(k);
+      if (!writeVerified(k, json)) throw new Error('write failed');
+    }
+    return true;
+  } catch (e) {
+    written.reverse().forEach(function (k) {
+      try {
+        if (old[k] === null) localStorage.removeItem(k);
+        else localStorage.setItem(k, old[k]);
+      } catch (ignore) {}
+    });
+    return false;
+  }
+}
+function canMutate() {
+  if (crossTabConflict) { toast('Data changed in another tab. Refresh this page before editing.', true); return false; }
+  if (storageBlocked) { toast('Data is protected. Import a valid backup before editing.', true); return false; }
+  return true;
 }
 function makeSnapshot() {
   return { app: 'finance-personal', version: 1, savedAt: new Date().toISOString(),
@@ -369,11 +437,11 @@ function makeSnapshot() {
 }
 function autoBackup() {
   try {
-    var prev = null;
-    try { prev = localStorage.getItem(LS_AUTO1); } catch (e) {}
-    if (prev) { try { localStorage.setItem(LS_AUTO2, prev); } catch (e) {} }
-    localStorage.setItem(LS_AUTO1, JSON.stringify(makeSnapshot()));
-  } catch (e) {}
+    var current = JSON.stringify(makeSnapshot());
+    var prev = localStorage.getItem(LS_AUTO1);
+    if (prev && !writeVerified(LS_AUTO2, prev)) return false;
+    return writeVerified(LS_AUTO1, current);
+  } catch (e) { return false; }
 }
 function readAuto(key) {
   var raw;
@@ -381,10 +449,10 @@ function readAuto(key) {
   if (!raw) return null;
   try {
     var s = JSON.parse(raw);
-    s.records = normalizeRecords(s.records);
-    s.opening = normalizeMoney(s.opening);
-    s.carry = isMoneyValue(s.carry) ? normalizeMoney(s.carry) : 0;
-    return isValidSnapshot(s) ? s : null;
+    if (!isValidSnapshot(s)) return null;
+    return { app: s.app, version: s.version, savedAt: s.savedAt || '',
+      records: normalizeRecords(s.records), opening: normalizeMoney(s.opening),
+      carry: s.carry === undefined ? 0 : normalizeMoney(s.carry) };
   } catch (e) { return null; }
 }
 function readRawPart(key) {
@@ -399,57 +467,49 @@ function parsePart(raw, fallback) {
 var bootRecordsP = parsePart(readRawPart(LS_RECORDS), []);
 var bootOpeningP = parsePart(readRawPart(LS_OPENING), null);
 var bootCarryP = parsePart(readRawPart(LS_CARRY), null);
-var records = bootRecordsP.corrupt ? [] : normalizeRecords(bootRecordsP.value);
+var records = (!bootRecordsP.corrupt && isValidRecords(bootRecordsP.value)) ? normalizeRecords(bootRecordsP.value) : [];
 var opening = 0;
 var openingSet = false;
-if (!bootOpeningP.corrupt && typeof bootOpeningP.value === 'number' && isFinite(bootOpeningP.value)) {
+if (!bootOpeningP.corrupt && isMoneyValue(bootOpeningP.value)) {
   opening = normalizeMoney(bootOpeningP.value);
   openingSet = true;
 }
 var carry = 0;
-if (!bootCarryP.corrupt && typeof bootCarryP.value === 'number' && isFinite(bootCarryP.value)) {
-  carry = normalizeMoney(bootCarryP.value);
-}
+if (!bootCarryP.corrupt && isMoneyValue(bootCarryP.value)) carry = normalizeMoney(bootCarryP.value);
 var dataBroken = false;
 var recoveredFromBackup = false;
 (function bootCheck() {
-  var recordsOk = !bootRecordsP.corrupt && Array.isArray(bootRecordsP.value) && isValidRecords(bootRecordsP.value);
-  if (recordsOk) return;
+  var recordsOk = bootRecordsP.missing || (!bootRecordsP.corrupt && isValidRecords(bootRecordsP.value));
+  var openingOk = bootOpeningP.missing || (!bootOpeningP.corrupt && isMoneyValue(bootOpeningP.value));
+  var carryOk = bootCarryP.missing || (!bootCarryP.corrupt && isMoneyValue(bootCarryP.value));
+  var candidateRecords = recordsOk ? (bootRecordsP.missing ? [] : bootRecordsP.value) : [];
+  var candidateOpening = openingOk && !bootOpeningP.missing ? bootOpeningP.value : 0;
+  var candidateCarry = carryOk && !bootCarryP.missing ? bootCarryP.value : 0;
+  if (recordsOk && openingOk && carryOk && ledgerWithinLimit(candidateRecords, candidateOpening, candidateCarry)) return;
   var snap = readAuto(LS_AUTO1) || readAuto(LS_AUTO2);
-  if (snap) {
-    records = normalizeRecords(snap.records);
-    opening = normalizeMoney(snap.opening);
-    openingSet = true;
-    carry = normalizeMoney(snap.carry);
-    saveRecords(records); saveOpening(opening); saveCarry(carry);
+  if (snap && commitBundle((function () { var v = {}; v[LS_RECORDS] = snap.records; v[LS_OPENING] = snap.opening; v[LS_CARRY] = snap.carry; return v; })())) {
+    records = snap.records; opening = snap.opening; openingSet = true; carry = snap.carry;
     recoveredFromBackup = true;
     return;
   }
   dataBroken = true;
+  storageBlocked = true;
+  /* Preserve every original byte for manual recovery; never erase damaged source data. */
   try {
-    var rawDump = JSON.stringify({ records: readRawPart(LS_RECORDS), opening: readRawPart(LS_OPENING), carry: readRawPart(LS_CARRY) });
-    localStorage.setItem('finance-personal-v1:broken-dump', rawDump);
+    localStorage.setItem('finance-personal-v1:broken-dump', JSON.stringify({
+      records: readRawPart(LS_RECORDS), opening: readRawPart(LS_OPENING), carry: readRawPart(LS_CARRY)
+    }));
   } catch (e) {}
-  try {
-    [LS_RECORDS, LS_OPENING, LS_CARRY].forEach(function (k) {
-      localStorage.removeItem(k);
-    });
-  } catch (e) {}
-  records = [];
-  opening = 0;
-  openingSet = false;
-  carry = 0;
 })();
 
 /* ---- Balance and ledger: one model feeds the screen and the copied text ---- */
 function balanceTotal() {
-  var inc = records.filter(function (r) { return r.type === 'income'; })
-    .reduce(function (s, r) { return s + r.amount; }, 0);
-  var exp = records.filter(function (r) { return r.type === 'expense'; })
-    .reduce(function (s, r) { return s + r.amount; }, 0);
-  var adj = records.filter(function (r) { return r.type === 'adjustment'; })
-    .reduce(function (s, r) { return s + r.amount; }, 0);
-  return normalizeMoney(opening + carry + inc - exp + adj);
+  var cents = toCents(opening) + toCents(carry);
+  records.forEach(function (r) {
+    var c = toCents(r.amount, r.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY);
+    cents += r.type === 'expense' ? -c : c;
+  });
+  return fromCents(cents);
 }
 function typeLabel(t) {
   return t === 'income' ? 'Income' : t === 'expense' ? 'Expense' : 'Adjustment';
@@ -466,15 +526,19 @@ function ledgerModel() {
     if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? -1 : 1;
     return 0;
   });
-  var run = opening;
+  var runCents = toCents(opening);
+  var run = fromCents(runCents);
   var rows = [];
   if (openingSet) rows.push({ kind: 'opening', run: run });
   if (carry !== 0) {
-    run = normalizeMoney(opening + carry);
+    runCents += toCents(carry);
+    run = fromCents(runCents);
     rows.push({ kind: 'carry', run: run });
   }
   chrono.forEach(function (r) {
-    run = normalizeMoney(run + (r.type === 'expense' ? -r.amount : r.amount));
+    var amountCents = toCents(r.amount, r.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY);
+    runCents += (r.type === 'expense' ? -amountCents : amountCents);
+    run = fromCents(runCents);
     rows.push({ kind: 'record', rec: r, run: run });
   });
   return rows;
@@ -527,32 +591,21 @@ function cutoff36() {
 var lastRetentionDate = null;
 function runRetentionCleanup() {
   var today = todayStr();
-  if (lastRetentionDate === today) return false; // only once per day
-  lastRetentionDate = today;
-  var cutoff = cutoff36();
-  var keep = [];
-  var droppedNet = 0;
-  var dropped = 0;
+  if (lastRetentionDate === today) return false;
+  var cutoff = cutoff36(), keep = [], droppedCents = 0, dropped = 0;
   records.forEach(function (r) {
     if (r.date < cutoff) {
       dropped++;
-      droppedNet = normalizeMoney(droppedNet + (r.type === 'expense' ? -r.amount : r.amount));
-    } else {
-      keep.push(r);
-    }
+      droppedCents += r.type === 'expense' ? -toCents(r.amount) : toCents(r.amount);
+    } else keep.push(r);
   });
-  if (!dropped) return false;
-  var oldRecords = records;
-  var oldCarry = carry;
-  records = keep;
-  carry = normalizeMoney(carry + droppedNet);
-  if (!saveRecords(records) || !saveCarry(carry)) {
-    saveRecords(oldRecords);
-    saveCarry(oldCarry);
-    records = oldRecords;
-    carry = oldCarry;
-    return false;
-  }
+  if (!dropped) { lastRetentionDate = today; return false; }
+  var nextCarryCents = toCents(carry) + droppedCents;
+  if (!Number.isSafeInteger(nextCarryCents) || Math.abs(nextCarryCents) > MAX_MONEY * 100) return false;
+  var nextCarry = fromCents(nextCarryCents), values = {};
+  values[LS_RECORDS] = keep; values[LS_CARRY] = nextCarry;
+  if (!commitBundle(values)) return false;
+  records = keep; carry = nextCarry; lastRetentionDate = today;
   autoBackup();
   return true;
 }
@@ -571,15 +624,19 @@ function closeConfirm() {
 function failSave() { closeConfirm(); toast('Save failed. Please try again.', true); }
 function parseAmount(raw) {
   var t = String(raw).replace(/[\s\u00a0]/g, '').replace(/^\+/, '');
-  if (/^-?\d+,\d{1,2}$/.test(t)) t = t.replace(',', '.');   /* 12,5 -> 12.5 */
-  else t = t.replace(/,(?=\d{3}(\D|$))/g, '');               /* 1,234.5 -> 1234.5 */
+  if (/^-?\d+,\d{1,2}$/.test(t)) t = t.replace(',', '.');
+  else t = t.replace(/,(?=\d{3}(\D|$))/g, '');
   if (!/^-?(\d+\.?\d*|\.\d+)$/.test(t)) return NaN;
-  return Math.round(parseFloat(t) * 100) / 100;
+  var n = Number(t);
+  if (!isFinite(n) || Math.abs(n) > MAX_MONEY) return NaN;
+  var cents = toCents(n);
+  if (cents === null) return NaN;
+  return fromCents(cents);
 }
 function parseEntryAmount(raw) {
   if (!raw) return null;
   var amount = parseAmount(raw);
-  return (isNaN(amount) || amount <= 0) ? null : amount;
+  return (!isFinite(amount) || amount <= 0 || toCents(amount) === null) ? null : amount;
 }
 var lastSubmitKey = null, lastSubmitAt = 0;
 function dupGuard(key) {
@@ -595,13 +652,15 @@ function dupBlocked(key) {
   return true;
 }
 $('btn-opening').addEventListener('click', function () {
+  if (!canMutate()) return;
   var raw = $('opening-amount').value.trim();
   var amount = raw ? parseAmount(raw) : 0;
-  if (raw && isNaN(amount)) { toast('Please enter a number.', true); return; }
+  if (raw && (!isFinite(amount) || toCents(amount) === null)) { toast('Enter a valid amount up to CA$1 billion.', true); return; }
   draft = { type: 'opening', amount: amount };
   openConfirm('Set the opening balance to <b>' + esc(fmtMoney(amount)) + '</b>');
 });
 $('btn-add').addEventListener('click', function () {
+  if (!canMutate()) return;
   var amount = parseEntryAmount($('add-amount').value.trim());
   if (amount === null) { toast('Please enter an amount greater than zero.', true); return; }
   draft = { type: 'income', amount: amount, memo: $('inc-memo').value.trim() };
@@ -609,6 +668,7 @@ $('btn-add').addEventListener('click', function () {
     (draft.memo ? '<br>Memo: ' + esc(draft.memo) : ''));
 });
 $('btn-expense').addEventListener('click', function () {
+  if (!canMutate()) return;
   var amount = parseEntryAmount($('exp-amount').value.trim());
   if (amount === null) { toast('Please enter an amount greater than zero.', true); return; }
   draft = { type: 'expense', amount: amount, memo: $('exp-memo').value.trim() };
@@ -704,9 +764,11 @@ $('exit-screen').addEventListener('keydown', function (e) {
 });
 $('btn-confirm').addEventListener('click', function () {
   if (!draft) return;
+  if (draft.type !== 'import' && !canMutate()) return;
   if (draft.type === 'opening') {
     if (dupBlocked(['opening', draft.amount, todayStr()].join('|'))) return;
     var val = draft.amount;
+    if (!ledgerWithinLimit(records, val, carry)) { toast('That opening balance would exceed the supported balance limit.', true); return; }
     var prevOpening = opening, prevSet = openingSet;
     opening = val; openingSet = true;
     if (!saveOpening(val)) {
@@ -721,13 +783,10 @@ $('btn-confirm').addEventListener('click', function () {
   }
   if (draft.type === 'import') {
     var sn = draft.snap;
-    var o = { r: records, o: opening, c: carry, s: openingSet };
+    var values = {}; values[LS_RECORDS] = sn.records; values[LS_OPENING] = sn.opening; values[LS_CARRY] = sn.carry;
+    if (!commitBundle(values)) { failSave(); return; }
     records = sn.records; opening = sn.opening; carry = sn.carry; openingSet = true;
-    if (!saveRecords(records) || !saveOpening(opening) || !saveCarry(carry)) {
-      records = o.r; opening = o.o; carry = o.c; openingSet = o.s;
-      saveRecords(records); saveOpening(opening); saveCarry(carry);
-      failSave(); return;
-    }
+    storageBlocked = false; crossTabConflict = false;
     autoBackup();
     closeConfirm();
     render();
@@ -751,6 +810,9 @@ $('btn-confirm').addEventListener('click', function () {
     return;
   }
   if (dupBlocked([draft.type, draft.amount, todayStr(), draft.memo].join('|'))) return;
+  if (records.length >= MAX_RECORDS) { toast('Record limit reached (20,000). Export a backup before continuing.', true); return; }
+  var projectedCents = toCents(balanceTotal()) + (draft.type === 'expense' ? -toCents(draft.amount) : toCents(draft.amount));
+  if (!Number.isSafeInteger(projectedCents) || Math.abs(projectedCents) > MAX_MONEY * 100) { toast('This entry would exceed the supported balance limit.', true); return; }
   var rec = { id: uid(), type: draft.type, date: todayStr(), amount: draft.amount,
     memo: draft.memo, createdAt: new Date().toISOString() };
   records.push(rec);
@@ -822,17 +884,16 @@ $('btn-import').addEventListener('click', function () {
   if (!raw) return;
   var snap;
   try { snap = JSON.parse(raw.trim()); } catch (e) { snap = null; }
-  if (snap) {
-    snap.records = normalizeRecords(snap.records);
-    snap.opening = normalizeMoney(snap.opening);
-    snap.carry = isMoneyValue(snap.carry) ? normalizeMoney(snap.carry) : 0;
-  }
-  if (!isValidSnapshot(snap)) { toast('That is not a valid backup.', true); return; }
+  if (!isValidSnapshot(snap)) { toast('That is not a valid backup. No data was changed.', true); return; }
+  snap = { app: snap.app, version: snap.version, savedAt: snap.savedAt || '',
+    records: normalizeRecords(snap.records), opening: normalizeMoney(snap.opening),
+    carry: snap.carry === undefined ? 0 : normalizeMoney(snap.carry) };
   closeHelp();
   draft = { type: 'import', snap: snap };
+  var snapCents = toCents(snap.opening) + toCents(snap.carry);
+  snap.records.forEach(function (r) { var a = toCents(r.amount, r.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY); snapCents += r.type === 'expense' ? -a : a; });
   openConfirm('Replace ALL current data with this backup?<br>' + snap.records.length +
-    ' records · balance <b>' + esc(fmtMoney(normalizeMoney(snap.opening + snap.carry + snap.records.reduce(function (t, r) {
-      return t + (r.type === 'expense' ? -r.amount : r.amount); }, 0)))) + '</b>');
+    ' records · balance <b>' + esc(fmtMoney(fromCents(snapCents))) + '</b>');
 });
 
 /* ---- Adjust balance: long-press ? (short tap still opens help) ---- */
@@ -853,7 +914,7 @@ function refreshAdjustPreview() {
     return;
   }
   var nw = parseAmount(raw);
-  if (isNaN(nw)) {
+  if (!isFinite(nw) || toCents(nw) === null) {
     $('adjust-preview').textContent = fmtMoney(cur) + ' → invalid amount';
     return;
   }
@@ -865,12 +926,15 @@ $('adjust-overlay').addEventListener('click', function (e) {
   if (e.target === $('adjust-overlay')) closeAdjust();
 });
 $('btn-adjust-confirm').addEventListener('click', function () {
+  if (!canMutate()) return;
   var raw = $('adjust-amount').value.trim();
   if (!raw) { closeAdjust(); toast('No change.'); return; }
   var nw = parseAmount(raw);
-  if (isNaN(nw)) { toast('Please enter a number.', true); return; }
-  var delta = normalizeMoney(nw - balanceTotal());
+  if (!isFinite(nw) || toCents(nw) === null) { toast('Enter a valid amount up to CA$1 billion.', true); return; }
+  var delta = fromCents(toCents(nw) - toCents(balanceTotal()));
   if (delta === 0) { closeAdjust(); toast('No change.'); return; }
+  if (!isFinite(delta) || Math.abs(delta) > MAX_MONEY * 2) { toast('Adjustment exceeds the supported limit.', true); return; }
+  if (records.length >= MAX_RECORDS) { toast('Record limit reached (20,000). Export a backup before continuing.', true); return; }
   var rec = { id: uid(), type: 'adjustment', date: todayStr(), amount: delta,
     memo: $('adjust-memo').value.trim() || 'Balance adjustment', createdAt: new Date().toISOString() };
   records.push(rec);
@@ -886,11 +950,42 @@ $('btn-adjust-confirm').addEventListener('click', function () {
   toast('Balance adjusted.');
 });
 
+/* Another tab must never silently overwrite this tab's in-memory ledger. */
+window.addEventListener('storage', function (e) {
+  if ([LS_RECORDS, LS_OPENING, LS_CARRY].indexOf(e.key) !== -1) {
+    crossTabConflict = true;
+    toast('Ledger changed in another tab. Refresh before making changes.', true);
+  }
+});
+/* Escape closes the topmost dialog; Tab stays within the active dialog. */
+document.addEventListener('keydown', function (e) {
+  var overlays = ['adjust-overlay', 'confirm-overlay', 'help-overlay'];
+  var active = null;
+  for (var i = 0; i < overlays.length; i++) if ($(overlays[i]).classList.contains('open')) active = $(overlays[i]);
+  if (!active) return;
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    if (active.id === 'adjust-overlay') closeAdjust();
+    else if (active.id === 'confirm-overlay') closeConfirm();
+    else closeHelp();
+  } else if (e.key === 'Tab') {
+    var nodes = active.querySelectorAll('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])');
+    if (!nodes.length) return;
+    var first = nodes[0], last = nodes[nodes.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+});
+
 /* ---- Startup: clean old records, then render ---- */
-if (bootCarryP.corrupt) saveCarry(carry);
-runRetentionCleanup();
+if (!storageBlocked) {
+  if (bootRecordsP.missing) saveRecords(records);
+  if (bootOpeningP.missing) saveOpening(opening);
+  if (bootCarryP.missing) saveCarry(carry);
+  runRetentionCleanup();
+}
 render();
-if (dataBroken) toast('Previous data could not be read, starting fresh.', true);
+if (dataBroken) toast('Data damaged: original data preserved. Import a valid backup to resume editing.', true);
 else if (recoveredFromBackup) toast('Restored from auto backup. Please check your balance.');
 })();
 </script>
