@@ -142,7 +142,8 @@
   }
   .dlg h2 { margin: 0 0 10px; font-size: 20px; }
   .dlg p { line-height: 1.5; color: #333; font-size: 15px; margin: 0 0 10px; word-break: break-word; }
-  #help-overlay .dlg p { text-align: left; }
+  #help-overlay ol { text-align: left; margin: 0 0 10px; padding-left: 22px; line-height: 1.5; color: #333; font-size: 15px; }
+  #help-overlay li { margin-bottom: 6px; }
   .dlg .btns { display: flex; gap: 8px; margin-top: 14px; }
   .dlg input[type="text"] {
     width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px;
@@ -163,20 +164,6 @@
   #toast.show { opacity: 1; }
   #toast.err { background: rgba(160,30,30,.95); }
   .dlg button:focus-visible, .sbtn:focus-visible, .st-corner:focus-visible, .ldel:focus-visible, .st-toggle:focus-visible { outline: 3px solid #2f7de1; outline-offset: 2px; }
-  /* ---- Lock screen ---- */
-  #lock-screen {
-    position: fixed; inset: 0; z-index: 200; background: #d9d2c2;
-    display: flex; align-items: center; justify-content: center; padding: 20px;
-  }
-  #lock-screen[hidden], #lock-screen form[hidden], #lock-screen input[hidden], #lock-screen [hidden] { display: none; }
-  #lock-screen form { display: flex; flex-direction: column; gap: 10px; width: min(80vw, 260px); }
-  #lock-screen input {
-    font-size: 22px; text-align: center; letter-spacing: .3em; padding: 12px; width: 100%;
-    border: 1px solid rgba(90,70,0,.35); border-radius: 10px; background: rgba(255,255,255,.65);
-    color: #2a2410; outline: none;
-  }
-  #lock-screen input:focus { background: rgba(255,255,255,.9); border-color: #2a2410; }
-  #lock-screen .small { text-align: center; min-height: 1.2em; }
   @media (prefers-reduced-motion: reduce) {
     .sticker { transform: none; }
     .st-corner, .sbtn, .sticker input[type="text"] { transition: none; }
@@ -188,17 +175,7 @@
 </head>
 <body>
 
-<div id="lock-screen" role="dialog" aria-modal="true" aria-label="Locked">
-  <form id="lock-form" autocomplete="off" hidden>
-    <div id="lock-title" class="small" hidden></div>
-    <input type="password" id="lock-pw" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="12" aria-label="Password">
-    <input type="password" id="lock-pw2" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="12" aria-label="Confirm password" hidden>
-    <div id="lock-msg" class="small" role="status"></div>
-    <button type="submit" class="sbtn" id="lock-go">OK</button>
-  </form>
-</div>
-
-<div class="sticker" id="sticker" hidden>
+<div class="sticker">
   <div class="tape"></div>
   <button type="button" class="st-corner" id="btn-exit" aria-label="Exit">Exit</button>
   <button type="button" class="st-corner" id="btn-copy" aria-label="Copy month summary" title="Tap to copy month, balance, income and expense">c</button>
@@ -256,11 +233,10 @@
 <div id="help-overlay" role="presentation">
   <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="help-title">
     <h2 id="help-title">About this sticker</h2>
-    <p>Opening balance can be set only once (the first time).</p>
-    <p>Tap the balance number to correct it. The difference is saved as an Adjustment.</p>
-    <p>Entries older than 36 days, and the oldest once you hit 50, move into “Carried forward”. The balance does not change.</p>
-    <p>Import replaces all current data. Export regularly (you will be reminded after 30 days).</p>
-    <p>Limits: CA$2,000 per amount and balance, 50 records, 20 characters per memo.</p>
+    <ol>
+      <li>Tap the balance number to change it. The difference is saved as an Adjustment.</li>
+      <li>Limits: CA$2,000 per amount and balance, 50 records, 20 characters per memo.</li>
+    </ol>
     <div class="btns">
       <button type="button" class="dbtn secondary" id="btn-export">Export backup</button>
       <button type="button" class="dbtn secondary" id="btn-import">Import backup</button>
@@ -290,8 +266,9 @@
 <div id="toast" role="status" aria-live="polite"></div>
 
 <input type="file" id="file-import" accept=".json,application/json" hidden>
+
 <script>
-function startApp() {
+(function () {
 'use strict';
 /* Personal ledger: one self-contained file, fully offline. The ledger
    stays in this browser's localStorage. Nothing is sent anywhere. */
@@ -330,12 +307,12 @@ function uid() {
 
 /* ---- Toast: small floating message ---- */
 var toastTimer = null;
-function toast(msg, isErr, ms) {
+function toast(msg, isErr) {
   var t = $('toast');
   t.textContent = msg;
   t.className = 'show' + (isErr ? ' err' : '');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(function () { t.className = ''; }, ms || 2600);
+  toastTimer = setTimeout(function () { t.className = ''; }, 2600);
 }
 
 /* ---- Storage: localStorage only ---- */
@@ -344,10 +321,6 @@ var LS_OPENING = 'finance-personal-v1:opening';
 var LS_CARRY = 'finance-personal-v1:carry';
 var LS_AUTO1 = 'finance-personal-v1:auto-backup';
 var LS_AUTO2 = 'finance-personal-v1:auto-backup-prev';
-var LS_LASTEXPORT = 'finance-personal-v1:last-export';
-var LS_FIRSTSEEN = 'finance-personal-v1:first-seen';
-var LS_REMINDED = 'finance-personal-v1:reminded-on';
-var BACKUP_REMIND_DAYS = 30;
 /* Money is calculated in integer cents. */
 var MAX_MONEY = 2000; // hard ceiling per balance/entry: CA$2,000
 var MAX_RECORDS = 50;
@@ -922,7 +895,6 @@ $('btn-export').addEventListener('click', function () {
   a.click();
   document.body.removeChild(a);
   setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-  try { localStorage.setItem(LS_LASTEXPORT, String(Date.now())); } catch (e) {}
   toast('Backup downloaded. Find it in Files.');
 });
 $('btn-import').addEventListener('click', function () { $('file-import').click(); });
@@ -1035,155 +1007,8 @@ if (!storageBlocked) {
   runRetentionCleanup();
 }
 render();
-function backupReminder() {
-  try {
-    var now = Date.now();
-    var lastExport = Number(localStorage.getItem(LS_LASTEXPORT));
-    var base = lastExport || Number(localStorage.getItem(LS_FIRSTSEEN));
-    if (!base) { localStorage.setItem(LS_FIRSTSEEN, String(now)); return; }
-    if (now - base < BACKUP_REMIND_DAYS * 86400000) return;
-    if (localStorage.getItem(LS_REMINDED) === todayStr()) return;
-    localStorage.setItem(LS_REMINDED, todayStr());
-    var msg;
-    if (lastExport) {
-      var d = new Date(lastExport);
-      var lastStr = MONTHS_SHORT[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
-      msg = 'Last backup: ' + lastStr + '. Over ' + BACKUP_REMIND_DAYS + ' days ago. Tap ? → Export.';
-    } else {
-      msg = 'No backup in over ' + BACKUP_REMIND_DAYS + ' days. Tap ? then Export backup.';
-    }
-    toast(msg, false, 6000);
-  } catch (e) {}
-}
 if (dataBroken) toast('Data damaged: original data preserved. Import a valid backup to resume editing.', true);
 else if (recoveredFromBackup) toast('Restored from auto backup. Please check your balance.');
-else backupReminder();
-}
-</script>
-<script>
-/* ---- Lock: password = 1 special character + 4 digits. No hints.
-   One wrong entry locks the app for 24 hours. The ledger code (startApp)
-   is not even run until the correct password is entered. ---- */
-(function () {
-'use strict';
-var K_HASH = 'finance-personal-v1:lock', K_UNTIL = 'finance-personal-v1:lock-until', K_SEEN = 'finance-personal-v1:lock-seen';
-var ROUNDS = 3000, DAY = 24 * 60 * 60 * 1000;
-function $(id) { return document.getElementById(id); }
-function g(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-function s(k, v) { try { localStorage.setItem(k, v); return localStorage.getItem(k) === v; } catch (e) { return false; } }
-function d(k) { try { localStorage.removeItem(k); } catch (e) {} }
-/* Never goes backwards: setting the phone clock back does not shorten the lock. */
-function nowMs() { var n = Date.now(), seen = Number(g(K_SEEN)) || 0; return seen > n ? seen : n; }
-function stamp() { s(K_SEEN, String(nowMs())); }
-
-function sha256(ascii) {
-  function rr(v, a) { return (v >>> a) | (v << (32 - a)); }
-  var pow = Math.pow, maxWord = pow(2, 32), result = '', i, j, words = [], bitLen = ascii.length * 8;
-  var hash = sha256.h = sha256.h || [], k = sha256.k = sha256.k || [], pc = k.length, comp = {};
-  for (var c = 2; pc < 64; c++) {
-    if (!comp[c]) {
-      for (i = 0; i < 313; i += c) comp[i] = c;
-      hash[pc] = (pow(c, .5) * maxWord) | 0;
-      k[pc++] = (pow(c, 1 / 3) * maxWord) | 0;
-    }
-  }
-  ascii += '\x80';
-  while (ascii.length % 64 - 56) ascii += '\x00';
-  for (i = 0; i < ascii.length; i++) { j = ascii.charCodeAt(i); words[i >> 2] |= j << ((3 - i) % 4) * 8; }
-  words[words.length] = (bitLen / maxWord) | 0;
-  words[words.length] = bitLen;
-  for (j = 0; j < words.length;) {
-    var w = words.slice(j, j += 16), old = hash;
-    hash = hash.slice(0, 8);
-    for (i = 0; i < 64; i++) {
-      var w15 = w[i - 15], w2 = w[i - 2], a = hash[0], e = hash[4];
-      var t1 = hash[7] + (rr(e, 6) ^ rr(e, 11) ^ rr(e, 25)) + ((e & hash[5]) ^ ((~e) & hash[6])) + k[i] +
-        (w[i] = (i < 16) ? w[i] : (w[i - 16] + (rr(w15, 7) ^ rr(w15, 18) ^ (w15 >>> 3)) + w[i - 7] + (rr(w2, 17) ^ rr(w2, 19) ^ (w2 >>> 10))) | 0);
-      var t2 = (rr(a, 2) ^ rr(a, 13) ^ rr(a, 22)) + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
-      hash = [(t1 + t2) | 0].concat(hash);
-      hash[4] = (hash[4] + t1) | 0;
-    }
-    for (i = 0; i < 8; i++) hash[i] = (hash[i] + old[i]) | 0;
-  }
-  for (i = 0; i < 8; i++) for (j = 3; j + 1; j--) { var b = (hash[i] >> (j * 8)) & 255; result += (b < 16 ? 0 : '') + b.toString(16); }
-  return result;
-}
-function derive(pw, salt) {
-  var u = unescape(encodeURIComponent(pw)), h = salt + u;
-  for (var i = 0; i < ROUNDS; i++) h = sha256(h + salt + u);
-  return h;
-}
-function randSalt() {
-  try {
-    var a = new Uint8Array(12); crypto.getRandomValues(a);
-    return Array.prototype.map.call(a, function (x) { return (x < 16 ? '0' : '') + x.toString(16); }).join('');
-  } catch (e) { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
-}
-function validNew(v) {
-  return v.length === 5 && (v.match(/[0-9]/g) || []).length === 4 && (v.match(/[^A-Za-z0-9\s]/g) || []).length === 1;
-}
-function parseRec(raw) {
-  try { var r = JSON.parse(raw); return (r && typeof r.s === 'string' && typeof r.h === 'string') ? r : null; } catch (e) { return null; }
-}
-
-var scr = $('lock-screen'), form = $('lock-form'), pw = $('lock-pw'), pw2 = $('lock-pw2'),
-    msg = $('lock-msg'), title = $('lock-title'), mode = 'blank', timer = null;
-
-function enter() {
-  pw.value = ''; pw2.value = '';
-  scr.hidden = true;
-  $('sticker').hidden = false;
-  startApp();
-}
-function goBlank(ms) {
-  mode = 'blank'; form.hidden = true; pw.value = ''; pw2.value = '';
-  clearTimeout(timer);
-  if (ms) timer = setTimeout(boot, Math.min(ms, 2147000000));
-}
-function boot() {
-  clearTimeout(timer);
-  /* If storage cannot be used the lock cannot be enforced: stay locked. */
-  if (!s('finance-personal-v1:probe', '1')) { goBlank(0); return; }
-  d('finance-personal-v1:probe');
-  var n = nowMs(); stamp();
-  var until = Number(g(K_UNTIL)) || 0;
-  if (until > n) { goBlank(until - n + 1000); return; }
-  if (until) d(K_UNTIL);
-  var rec = parseRec(g(K_HASH));
-  pw.value = ''; pw2.value = ''; msg.textContent = '';
-  if (!rec) {
-    mode = 'setup';
-    title.hidden = false; title.textContent = 'Set password';
-    pw2.hidden = false;
-    msg.textContent = '1 special character + 4 digits';
-  } else {
-    mode = 'unlock';
-    title.hidden = true; pw2.hidden = true;
-  }
-  form.hidden = false;
-  setTimeout(function () { pw.focus(); }, 30);
-}
-form.addEventListener('submit', function (e) {
-  e.preventDefault();
-  var v = pw.value;
-  if (mode === 'setup') {
-    if (!validNew(v)) { msg.textContent = '1 special character + 4 digits'; return; }
-    if (v !== pw2.value) { msg.textContent = 'Passwords do not match'; return; }
-    var salt = randSalt();
-    if (!s(K_HASH, JSON.stringify({ s: salt, h: derive(v, salt) }))) { msg.textContent = 'Could not save'; return; }
-    enter();
-    return;
-  }
-  if (mode !== 'unlock' || !v) return;
-  /* Record the lock BEFORE checking, so closing the page mid-check cannot dodge it. */
-  var n = nowMs();
-  if (!s(K_UNTIL, String(n + DAY))) { goBlank(0); return; }
-  var rec = parseRec(g(K_HASH));
-  var ok = !!rec && derive(v, rec.s) === rec.h;
-  if (ok) { d(K_UNTIL); enter(); }
-  else { stamp(); goBlank(DAY + 1000); }
-});
-boot();
 })();
 </script>
 </body>
