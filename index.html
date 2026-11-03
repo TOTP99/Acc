@@ -105,9 +105,8 @@
     transition: transform .1s ease, background .12s ease, box-shadow .12s ease;
   }
   #btn-exit { left: 12px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: bold; }
-  #btn-help, #btn-copy { width: 28px; height: 28px; border-radius: 50%; font-size: 16px; font-weight: bold; padding: 0; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-  #btn-help { right: 12px; }
-  #btn-copy { right: 48px; }
+  #btn-help { right: 12px; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; font-weight: bold; padding: 0; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+  #btn-copy { right: 48px; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; font-weight: bold; padding: 0; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
   /* ---- Borderless entry toggles: tap to expand the form in place ---- */
   .st-toggle {
     display: flex; justify-content: space-between; align-items: center; width: 100%;
@@ -340,21 +339,6 @@ function toCents(v, limit) {
   return Number.isSafeInteger(c) ? c : null;
 }
 function fromCents(c) { return c / 100; }
-function amountLimit(type) { return type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY; }
-function recCents(r) { return toCents(r.amount, amountLimit(r.type)); }
-function signedCents(r) { var c = recCents(r); return r.type === 'expense' ? -c : c; }
-function sumCents(list, op, ca) {
-  var c = toCents(op) + toCents(ca || 0);
-  list.forEach(function (r) { c += signedCents(r); });
-  return c;
-}
-function chrono(list) {
-  return list.slice().sort(function (a, b) {
-    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
-    if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? -1 : 1;
-    return 0;
-  });
-}
 function normalizeMoney(v) {
   var c = toCents(v);
   return c === null ? 0 : fromCents(c);
@@ -384,7 +368,8 @@ function validDateString(ds) {
 function isValidRecord(r) {
   if (!r || (r.type !== 'income' && r.type !== 'expense' && r.type !== 'adjustment')) return false;
   if (!validDateString(r.date)) return false;
-  var cents = recCents(r);
+  var amountLimit = r.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY;
+  var cents = toCents(r.amount, amountLimit);
   if (cents === null) return false;
   if (typeof r.id !== 'string' || !r.id || r.id.length > 128) return false;
   if (r.memo !== undefined && (typeof r.memo !== 'string' || r.memo.length > MAX_MEMO)) return false;
@@ -404,7 +389,7 @@ function isMoneyValue(v) { return toCents(v) !== null; }
 function normalizeRecords(list) {
   if (!Array.isArray(list)) return [];
   return list.map(function (r) {
-    return { id: r.id, type: r.type, date: r.date, amount: fromCents(recCents(r)),
+    return { id: r.id, type: r.type, date: r.date, amount: fromCents(toCents(r.amount, r.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY)),
       memo: (typeof r.memo === 'string') ? r.memo : '',
       createdAt: (typeof r.createdAt === 'string') ? r.createdAt : '' };
   });
@@ -415,7 +400,8 @@ function normalizeSnapshot(s) {
     carry: s.carry === undefined ? 0 : normalizeMoney(s.carry) };
 }
 function ledgerWithinLimit(list, op, ca) {
-  var cents = sumCents(list, op, ca);
+  var cents = toCents(op) + toCents(ca || 0);
+  list.forEach(function (r) { var a = toCents(r.amount, r.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY); cents += r.type === 'expense' ? -a : a; });
   return Number.isSafeInteger(cents) && Math.abs(cents) <= MAX_MONEY * 100;
 }
 function isValidSnapshot(s) {
@@ -522,7 +508,14 @@ var recoveredFromBackup = false;
 })();
 
 /* ---- Balance and ledger: one model feeds the screen ---- */
-function balanceTotal() { return fromCents(sumCents(records, opening, carry)); }
+function balanceTotal() {
+  var cents = toCents(opening) + toCents(carry);
+  records.forEach(function (r) {
+    var c = toCents(r.amount, r.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY);
+    cents += r.type === 'expense' ? -c : c;
+  });
+  return fromCents(cents);
+}
 function typeLabel(t) {
   return t === 'income' ? 'Income' : t === 'expense' ? 'Expense' : 'Adjustment';
 }
@@ -533,15 +526,25 @@ function signedAmount(r) {
   return (r.type === 'income' ? '+' : '-') + fmtMoney(r.amount);
 }
 function ledgerModel() {
+  var chrono = records.slice().sort(function (a, b) {
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? -1 : 1;
+    return 0;
+  });
   var runCents = toCents(opening);
+  var run = fromCents(runCents);
   var rows = [];
+  if (openingSet) rows.push({ kind: 'opening', run: run });
   if (carry !== 0) {
     runCents += toCents(carry);
-    rows.push({ kind: 'carry', run: fromCents(runCents) });
+    run = fromCents(runCents);
+    rows.push({ kind: 'carry', run: run });
   }
-  chrono(records).forEach(function (r) {
-    runCents += signedCents(r);
-    rows.push({ kind: 'record', rec: r, run: fromCents(runCents) });
+  chrono.forEach(function (r) {
+    var amountCents = toCents(r.amount, r.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY);
+    runCents += (r.type === 'expense' ? -amountCents : amountCents);
+    run = fromCents(runCents);
+    rows.push({ kind: 'record', rec: r, run: run });
   });
   return rows;
 }
@@ -551,7 +554,7 @@ function render() {
   $('sec-opening').style.display = openingSet ? 'none' : 'block';
   var list = $('ledger-list');
   list.innerHTML = '';
-  var rows = ledgerModel().reverse(); /* newest first */
+  var rows = ledgerModel().filter(function (row) { return row.kind !== 'opening'; }).reverse(); /* newest first */
   if (!rows.length) {
     list.innerHTML = '<div class="small">No records yet.</div>';
     return;
@@ -598,7 +601,8 @@ function runRetentionCleanup() {
   records.forEach(function (r) {
     if (r.date < cutoff) {
       dropped++;
-      droppedCents += signedCents(r);
+      var c = toCents(r.amount, r.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY);
+      droppedCents += r.type === 'expense' ? -c : c;
     } else keep.push(r);
   });
   if (!dropped) { lastRetentionDate = today; return false; }
@@ -615,8 +619,13 @@ function runRetentionCleanup() {
 /* ---- Full ledger: fold the oldest record into "Carried forward" (balance unchanged) ---- */
 function makeRoom() {
   if (records.length < MAX_RECORDS) return false;
-  var oldest = chrono(records)[0];
-  var nextCents = toCents(carry) + signedCents(oldest);
+  var oldest = records.slice().sort(function (a, b) {
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? -1 : 1;
+    return 0;
+  })[0];
+  var c = toCents(oldest.amount, oldest.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY);
+  var nextCents = toCents(carry) + (oldest.type === 'expense' ? -c : c);
   if (!Number.isSafeInteger(nextCents) || Math.abs(nextCents) > MAX_MONEY * 100) return null;
   var keep = records.filter(function (x) { return x.id !== oldest.id; });
   var nextCarry = fromCents(nextCents), values = {};
@@ -843,6 +852,9 @@ $('btn-confirm').addEventListener('click', function () {
 });
 
 /* ---- Copy: tap c for month and balance ---- */
+function buildMonthBalanceText() {
+  return [monthTitleNow(), 'Balance: ' + fmtMoney(balanceTotal())].join('\n');
+}
 function fallbackCopy(text) {
   try {
     var ta = document.createElement('textarea');
@@ -867,9 +879,8 @@ function doCopy(text, okMsg) {
     done(fallbackCopy(text));
   }
 }
-$('btn-copy').addEventListener('click', function () {
-  doCopy(monthTitleNow() + '\nBalance: ' + fmtMoney(balanceTotal()), 'Month and balance copied.');
-});
+function copyMonthBalance() { doCopy(buildMonthBalanceText(), 'Month and balance copied.'); }
+$('btn-copy').addEventListener('click', copyMonthBalance);
 
 /* ---- Backup: export downloads JSON, import uploads it back ---- */
 $('btn-export').addEventListener('click', function () {
@@ -898,7 +909,8 @@ $('file-import').addEventListener('change', function () {
     snap = normalizeSnapshot(snap);
     closeHelp();
     draft = { type: 'import', snap: snap };
-    var snapCents = sumCents(snap.records, snap.opening, snap.carry);
+    var snapCents = toCents(snap.opening) + toCents(snap.carry);
+    snap.records.forEach(function (r) { var a = toCents(r.amount, r.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY); snapCents += r.type === 'expense' ? -a : a; });
     openConfirm('Replace ALL current data with this backup?<br>' + snap.records.length +
       ' records · balance <b>' + esc(fmtMoney(fromCents(snapCents))) + '</b>');
   };
@@ -932,6 +944,7 @@ function refreshAdjustPreview() {
 }
 $('adjust-amount').addEventListener('input', refreshAdjustPreview);
 $('btn-adjust-cancel').addEventListener('click', closeAdjust);
+closeOnBackdrop('adjust-overlay', closeAdjust);
 $('btn-adjust-confirm').addEventListener('click', function () {
   if (!canMutate()) return;
   var raw = $('adjust-amount').value.trim();
