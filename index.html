@@ -66,6 +66,7 @@
     overflow-wrap: anywhere;
     word-break: break-word;
     max-width: 100%;
+    cursor: pointer;
   }
   .st-section { border-top: 1px dashed rgba(90,70,0,.30); margin-top: 14px; padding-top: 12px; }
   .st-section h3 { margin: 0 0 8px; font-size: 17px; }
@@ -100,11 +101,6 @@
     background: rgba(255,255,255,.65); border: 1px solid rgba(90,70,0,.35);
     box-shadow: 0 1px 2px rgba(0,0,0,.15); cursor: pointer;
     transition: transform .1s ease, background .12s ease, box-shadow .12s ease;
-  }
-  .st-corner.pressed {
-    transform: scale(0.88);
-    background: rgba(255,255,255,.85);
-    box-shadow: 0 0 0 rgba(0,0,0,0);
   }
   #btn-exit { left: 12px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: bold; }
   #btn-help { right: 12px; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; font-weight: bold; padding: 0; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -179,12 +175,12 @@
 <div class="sticker">
   <div class="tape"></div>
   <button type="button" class="st-corner" id="btn-exit" aria-label="Exit">Exit</button>
-  <button type="button" class="st-corner" id="btn-copy" aria-label="Copy month and balance. Long-press for full records" title="Tap: month & balance · Long-press: records">c</button>
-  <button type="button" class="st-corner" id="btn-help" aria-label="About this sticker. Long-press to adjust balance" title="Tap: help · Long-press: adjust balance">?</button>
+  <button type="button" class="st-corner" id="btn-copy" aria-label="Copy month and balance" title="Tap to copy month and balance">c</button>
+  <button type="button" class="st-corner" id="btn-help" aria-label="About this sticker" title="Tap: help">?</button>
   <div class="sticker-scroll">
     <div class="st-month" id="st-month"></div>
     <div class="st-balance-label">Balance</div>
-    <div class="st-balance" id="st-balance"></div>
+    <div class="st-balance" id="st-balance" role="button" tabindex="0" aria-label="Tap to adjust balance" title="Tap to adjust balance"></div>
 
     <div class="st-section" id="sec-opening" style="display:none;">
       <h3>Opening balance</h3>
@@ -202,7 +198,7 @@
           <input type="text" id="add-amount" inputmode="decimal" value="100" aria-label="Amount to add">
           <button type="button" class="sbtn" id="btn-add">Add</button>
         </div>
-        <input type="text" id="inc-memo" maxlength="60" placeholder="Memo" aria-label="Income memo">
+        <input type="text" id="inc-memo" maxlength="20" placeholder="Memo" aria-label="Income memo">
       </div>
     </div>
 
@@ -210,7 +206,7 @@
       <button type="button" class="st-toggle" id="btn-toggle-expense" aria-expanded="false" aria-controls="body-expense">New expense <span class="chev" id="chev-expense">▾</span></button>
       <div class="st-body" id="body-expense" role="region" aria-labelledby="btn-toggle-expense">
         <input type="text" id="exp-amount" inputmode="decimal" placeholder="Amount" aria-label="Expense amount">
-        <input type="text" id="exp-memo" maxlength="60" placeholder="Memo" aria-label="Expense memo">
+        <input type="text" id="exp-memo" maxlength="20" placeholder="Memo" aria-label="Expense memo">
         <div style="margin-top:10px;"><button type="button" class="sbtn" id="btn-expense">Submit</button></div>
       </div>
     </div>
@@ -237,12 +233,12 @@
     <p>1. Opening balance: set on first use.</p>
     <p>2. Add income / New expense: enter the amount.</p>
     <p>3. Balance can go negative.</p>
-    <p>4. Long-press ? to adjust the balance.</p>
-    <p>5. Tap c for month and balance, long-press for records.</p>
+    <p>4. Tap the balance number to adjust it.</p>
+    <p>5. Tap c for month and balance.</p>
     <p>6. Exit: blank screen, reopen to return.</p>
     <p>7. Each record can be deleted.</p>
     <p>8. Everything stays on this phone. Browsers may clear site data after long disuse, so export a backup now and then (and add this page to your Home Screen).</p>
-    <p>9. Amounts are limited to CA$1 billion each; calculations use exact cents. Keep a separate exported backup because automatic backups are stored in this browser only.</p>
+    <p>9. Amounts are limited to CA$500 each; calculations use exact cents. Keep a separate exported backup because automatic backups are stored in this browser only.</p>
     <div class="btns">
       <button type="button" class="dbtn secondary" id="btn-export">Export backup</button>
       <button type="button" class="dbtn secondary" id="btn-import">Import backup</button>
@@ -259,7 +255,7 @@
     <p><b id="adjust-preview"></b></p>
     <p>New balance (leave empty to keep the current balance):</p>
     <input type="text" id="adjust-amount" inputmode="decimal" aria-label="New balance">
-    <input type="text" id="adjust-memo" maxlength="60" placeholder="Reason" aria-label="Reason">
+    <input type="text" id="adjust-memo" maxlength="20" placeholder="Reason" aria-label="Reason">
     <div class="btns">
       <button type="button" class="dbtn" id="btn-adjust-confirm">Confirm</button>
       <button type="button" class="dbtn secondary" id="btn-adjust-cancel">Cancel</button>
@@ -271,6 +267,7 @@
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
 
+<input type="file" id="file-import" accept=".json,application/json" hidden>
 <script>
 (function () {
 'use strict';
@@ -326,9 +323,9 @@ var LS_CARRY = 'finance-personal-v1:carry';
 var LS_AUTO1 = 'finance-personal-v1:auto-backup';
 var LS_AUTO2 = 'finance-personal-v1:auto-backup-prev';
 /* All calculations use integer cents. Stored values remain decimal dollars for v1 compatibility. */
-var MAX_MONEY = 1000000000; // hard ceiling per balance/entry: CA$1 billion
-var MAX_RECORDS = 20000;
-var MAX_MEMO = 60;
+var MAX_MONEY = 500; // hard ceiling per balance/entry: CA$500
+var MAX_RECORDS = 10;
+var MAX_MEMO = 20;
 var storageBlocked = false;
 var crossTabConflict = false;
 function toCents(v, limit) {
@@ -433,7 +430,7 @@ function canMutate() {
 }
 function makeSnapshot() {
   return { app: 'finance-personal', version: 1, savedAt: new Date().toISOString(),
-    records: records, opening: opening, carry: carry };
+    records: records, opening: opening, carry: carry, balance: balanceTotal() };
 }
 function autoBackup() {
   try {
@@ -655,7 +652,7 @@ $('btn-opening').addEventListener('click', function () {
   if (!canMutate()) return;
   var raw = $('opening-amount').value.trim();
   var amount = raw ? parseAmount(raw) : 0;
-  if (raw && (!isFinite(amount) || toCents(amount) === null)) { toast('Enter a valid amount up to CA$1 billion.', true); return; }
+  if (raw && (!isFinite(amount) || toCents(amount) === null)) { toast('Enter a valid amount up to CA$500.', true); return; }
   draft = { type: 'opening', amount: amount };
   openConfirm('Set the opening balance to <b>' + esc(fmtMoney(amount)) + '</b>');
 });
@@ -712,37 +709,12 @@ function openHelp() {
   setTimeout(function () { $('btn-help-close').focus(); }, 30);
 }
 function closeHelp() { $('help-overlay').classList.remove('open'); }
-/* Hold-to-act buttons (? and c): a 600ms hold runs the long-press action,
-   a short tap runs the tap action. A click always follows a long-press, so
-   the click arriving right after one is swallowed, not run as a tap.
-   Visual pressed state is applied while the finger is down. */
-function bindLongPress(btn, onLongPress, onTap) {
-  var at = 0, timer = null;
-  function clear() {
-    if (timer) { clearTimeout(timer); timer = null; }
-    btn.classList.remove('pressed');
-  }
-  btn.addEventListener('pointerdown', function (e) {
-    if (e.button && e.button !== 0) return;
-    clear();
-    btn.classList.add('pressed');
-    timer = setTimeout(function () {
-      timer = null;
-      at = Date.now();
-      btn.classList.remove('pressed');
-      onLongPress();
-    }, 600);
-  });
-  ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) {
-    btn.addEventListener(ev, clear);
-  });
-  btn.addEventListener('click', function () {
-    if (at && Date.now() - at < 2000) { at = 0; return; }
-    onTap();
-  });
-  btn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-}
-bindLongPress($('btn-help'), openAdjust, openHelp);
+$('btn-help').addEventListener('click', openHelp);
+/* Balance number opens the adjust dialog */
+$('st-balance').addEventListener('click', openAdjust);
+$('st-balance').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAdjust(); }
+});
 $('btn-help-close').addEventListener('click', closeHelp);
 $('help-overlay').addEventListener('click', function (e) {
   if (e.target === $('help-overlay')) closeHelp();
@@ -810,7 +782,7 @@ $('btn-confirm').addEventListener('click', function () {
     return;
   }
   if (dupBlocked([draft.type, draft.amount, todayStr(), draft.memo].join('|'))) return;
-  if (records.length >= MAX_RECORDS) { toast('Record limit reached (20,000). Export a backup before continuing.', true); return; }
+  if (records.length >= MAX_RECORDS) { toast('Record limit reached (10). Export a backup before continuing.', true); return; }
   var projectedCents = toCents(balanceTotal()) + (draft.type === 'expense' ? -toCents(draft.amount) : toCents(draft.amount));
   if (!Number.isSafeInteger(projectedCents) || Math.abs(projectedCents) > MAX_MONEY * 100) { toast('This entry would exceed the supported balance limit.', true); return; }
   var rec = { id: uid(), type: draft.type, date: todayStr(), amount: draft.amount,
@@ -830,22 +802,9 @@ $('btn-confirm').addEventListener('click', function () {
   toast(doneType === 'income' ? 'Income added.' : 'Expense added.');
 });
 
-/* ---- Copy: tap c for month and balance, long-press c for records ---- */
+/* ---- Copy: tap c for month and balance ---- */
 function buildMonthBalanceText() {
   return [monthTitleNow(), 'Balance: ' + fmtMoney(balanceTotal())].join('\n');
-}
-function buildRecordsText() {
-  var lines = [];
-  ledgerModel().forEach(function (row) {
-    if (row.kind === 'carry') { lines.push('Carried forward · ' + fmtMoney(carry) + ' · Balance ' + fmtMoney(row.run)); return; }
-    if (row.kind !== 'record') return;
-    var r = row.rec;
-    lines.push(fmtDate(r.date) + ' · ' + typeLabel(r.type) +
-      ' · ' + signedAmount(r) + (r.memo ? ' · ' + r.memo : '') +
-      ' · Balance ' + fmtMoney(row.run));
-  });
-  if (!lines.length) lines.push('No records yet.');
-  return lines.join('\n');
 }
 function fallbackCopy(text) {
   try {
@@ -872,31 +831,46 @@ function doCopy(text, okMsg) {
   }
 }
 function copyMonthBalance() { doCopy(buildMonthBalanceText(), 'Month and balance copied.'); }
-function copyRecords() { doCopy(buildRecordsText(), 'Records copied. Paste into Google Keep.'); }
-bindLongPress($('btn-copy'), copyRecords, copyMonthBalance);
+$('btn-copy').addEventListener('click', copyMonthBalance);
 
-/* ---- Backup: export copies JSON, import pastes it back ---- */
+/* ---- Backup: export downloads JSON, import uploads it back ---- */
 $('btn-export').addEventListener('click', function () {
-  doCopy(JSON.stringify(makeSnapshot()), 'Backup copied. Paste it somewhere safe.');
+  var blob = new Blob([JSON.stringify(makeSnapshot(), null, 2)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'ledger-' + todayStr() + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  toast('Backup downloaded. Find it in Files.');
 });
-$('btn-import').addEventListener('click', function () {
-  var raw = window.prompt('Paste the backup text:');
-  if (!raw) return;
-  var snap;
-  try { snap = JSON.parse(raw.trim()); } catch (e) { snap = null; }
-  if (!isValidSnapshot(snap)) { toast('That is not a valid backup. No data was changed.', true); return; }
-  snap = { app: snap.app, version: snap.version, savedAt: snap.savedAt || '',
-    records: normalizeRecords(snap.records), opening: normalizeMoney(snap.opening),
-    carry: snap.carry === undefined ? 0 : normalizeMoney(snap.carry) };
-  closeHelp();
-  draft = { type: 'import', snap: snap };
-  var snapCents = toCents(snap.opening) + toCents(snap.carry);
-  snap.records.forEach(function (r) { var a = toCents(r.amount, r.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY); snapCents += r.type === 'expense' ? -a : a; });
-  openConfirm('Replace ALL current data with this backup?<br>' + snap.records.length +
-    ' records · balance <b>' + esc(fmtMoney(fromCents(snapCents))) + '</b>');
+$('btn-import').addEventListener('click', function () { $('file-import').click(); });
+$('file-import').addEventListener('change', function () {
+  var f = this.files && this.files[0];
+  this.value = '';
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function () {
+    var snap;
+    try { snap = JSON.parse(String(reader.result).trim()); } catch (e) { snap = null; }
+    if (!isValidSnapshot(snap)) { toast('That is not a valid backup. No data was changed.', true); return; }
+    snap = { app: snap.app, version: snap.version, savedAt: snap.savedAt || '',
+      records: normalizeRecords(snap.records), opening: normalizeMoney(snap.opening),
+      carry: snap.carry === undefined ? 0 : normalizeMoney(snap.carry) };
+    closeHelp();
+    draft = { type: 'import', snap: snap };
+    var snapCents = toCents(snap.opening) + toCents(snap.carry);
+    snap.records.forEach(function (r) { var a = toCents(r.amount, r.type === 'adjustment' ? MAX_MONEY * 2 : MAX_MONEY); snapCents += r.type === 'expense' ? -a : a; });
+    openConfirm('Replace ALL current data with this backup?<br>' + snap.records.length +
+      ' records · balance <b>' + esc(fmtMoney(fromCents(snapCents))) + '</b>');
+  };
+  reader.onerror = function () { toast('That backup could not be read.', true); };
+  reader.readAsText(f);
 });
 
-/* ---- Adjust balance: long-press ? (short tap still opens help) ---- */
+/* ---- Adjust balance: tap the balance number ---- */
 function openAdjust() {
   $('adjust-current').textContent = fmtMoney(balanceTotal());
   $('adjust-amount').value = '';
@@ -930,11 +904,11 @@ $('btn-adjust-confirm').addEventListener('click', function () {
   var raw = $('adjust-amount').value.trim();
   if (!raw) { closeAdjust(); toast('No change.'); return; }
   var nw = parseAmount(raw);
-  if (!isFinite(nw) || toCents(nw) === null) { toast('Enter a valid amount up to CA$1 billion.', true); return; }
+  if (!isFinite(nw) || toCents(nw) === null) { toast('Enter a valid amount up to CA$500.', true); return; }
   var delta = fromCents(toCents(nw) - toCents(balanceTotal()));
   if (delta === 0) { closeAdjust(); toast('No change.'); return; }
   if (!isFinite(delta) || Math.abs(delta) > MAX_MONEY * 2) { toast('Adjustment exceeds the supported limit.', true); return; }
-  if (records.length >= MAX_RECORDS) { toast('Record limit reached (20,000). Export a backup before continuing.', true); return; }
+  if (records.length >= MAX_RECORDS) { toast('Record limit reached (10). Export a backup before continuing.', true); return; }
   var rec = { id: uid(), type: 'adjustment', date: todayStr(), amount: delta,
     memo: $('adjust-memo').value.trim() || 'Balance adjustment', createdAt: new Date().toISOString() };
   records.push(rec);
